@@ -1,152 +1,74 @@
+#include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <set>
 #include <string>
-#include <utility>
 #include <vector>
-#include <algorithm>
 
 using namespace std;
 
-const int MAX_RESULT_DOCUMENT_COUNT = 5;
+const int SAMPLE_COUNT = 5;
 
-string ReadLine() {
-    string s;
-    getline(cin, s);
-    return s;
-}
-
-int ReadLineWithNumber() {
-    int result = 0;
-    cin >> result;
-    ReadLine();
-    return result;
-}
-
-vector<string> SplitIntoWords(const string& text) {
-    vector<string> words;
-    string word;
-    for (const char c : text) {
-        if (c == ' ') {
-            if (!word.empty()) {
-                words.push_back(word);
-                word.clear();
-            }
-        } else {
-            word += c;
-        }
+/**
+ * Определяет, какие имена из вектора candidates содержатся внутри множества storage.
+ * Возвращает вектор, где каждому элементу из candidates соответствует одно из чисел:
+ *  0 - элемент из candidates отсутствует в storage
+ *  1 - элемент из candidates присутствует внутри storage
+ */
+vector<int> CountNamesLong(const set<string>& storage, const vector<string>& candidates) {
+    // Эта функция работает правильно, но недостаточно быстро.
+    // Не удаляйте и не изменяйте код этой функции.
+    
+    vector<int> output;
+    for (auto& name : candidates) {
+        // Подсчитываем количество вхождений name в storage стандартным алгоритмом count
+        output.push_back(count(storage.begin(), storage.end(), name));
     }
-    if (!word.empty()) {
-        words.push_back(word);
+    return output;
+}
+
+// Напишите тело функции CountNames, которая выдаёт результат, аналогичный CountNamesLong,
+// но выполняется быстрее за счёт использования встроенного алгоритма count вместо общего
+vector<int> CountNames(const set<string>& storage, const vector<string>& candidates) {
+    vector<int> output;
+    for (auto& name : candidates) {
+        output.push_back(storage.count(name));
     }
-
-    return words;
+    // Напишите реализацию здесь
+    return output;
 }
-
-set<string> ParseStopWords(const string& text) {
-    set<string> stop_words;
-    for (const string& word : SplitIntoWords(text)) {
-        stop_words.insert(word);
-    }
-    return stop_words;
-}
-
-vector<string> SplitIntoWordsNoStop(const string& text, const set<string>& stop_words) {
-    vector<string> words;
-    for (const string& word : SplitIntoWords(text)) {
-        if (stop_words.count(word) == 0) {
-            words.push_back(word);
-        }
-    }
-    return words;
-}
-
-void AddDocument(vector<pair<int, vector<string>>>& documents, const set<string>& stop_words,
-                 int document_id, const string& document) {
-    const vector<string> words = SplitIntoWordsNoStop(document, stop_words);
-    documents.push_back(pair<int, vector<string>>{document_id, words});
-}
-
-set<string> ParseQuery(const string& text, const set<string>& stop_words) {
-    set<string> query_words;
-    for (const string& word : SplitIntoWordsNoStop(text, stop_words)) {
-        query_words.insert(word);
-    }
-    return query_words;
-}
-
-int MatchDocument(const pair<int, vector<string>>& content, const set<string>& query_words) {
-    if (query_words.empty()) {
-        return 0;
-    }
-    set<string> matched_words;
-    for (const string& word : content.second) {
-        if (matched_words.count(word) != 0) {
-            continue;
-        }
-        if (query_words.count(word) != 0) {
-            matched_words.insert(word);
-        }
-    }
-
-    // Преобразовываем беззнаковое число типа size_t в int используя
-    // static_cast<int>
-    return static_cast<int>(matched_words.size());
-}
-
-// Для каждого документа возвращает его id и релевантность
-vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents,
-                                     const set<string>& stop_words, const string& query) {
-    const set<string> query_words = ParseQuery(query, stop_words);
-    vector<pair<int, int>> matched_documents;
-    for (const auto& document : documents) {
-        const int relevance = MatchDocument(document, query_words);
-        if (relevance > 0) {
-            matched_documents.push_back({relevance, document.first});
-        }
-    }
-    return matched_documents;
-}
-
-/*
-// Для каждого документа возвращает его релевантность и id
-vector<pair<int, int>> FindAllDocuments(const vector<pair<int, vector<string>>>& documents,
-    const set<string>& query_words)
-{
-    // Превратите функцию FindDocuments в FindAllDocuments
-    // Первым элементом возвращаемых пар идёт релевантность документа, а вторым - его id
-}
-*/
-
-
-// Возвращает топ-5 самых релевантных документов в виде пар: {id, релевантность}
-vector<pair<int, int>> FindTopDocuments(const vector<pair<int, vector<string>>>& documents,
-                                        const set<string>& stop_words, const string& raw_query) {
-    vector<pair<int, int>> top_rel_id = FindAllDocuments(documents, stop_words, raw_query);
-    sort(top_rel_id.begin(), top_rel_id.end());
-    reverse(top_rel_id.begin(), top_rel_id.end());
-    if (top_rel_id.size() > MAX_RESULT_DOCUMENT_COUNT) {
-        top_rel_id.resize(MAX_RESULT_DOCUMENT_COUNT);
-    }
-    return top_rel_id;
-    // Напишите функцию, используя FindAllDocuments
-}
-
 
 int main() {
-    const string stop_words_joined = ReadLine();
-    const set<string> stop_words = ParseStopWords(stop_words_joined);
+    set<string> s;
+    vector<string> v;
+    string stra;
+    string strb;
 
-    // Чтение документов
-    vector<pair<int, vector<string>>> documents;
-    const int document_count = ReadLineWithNumber();
-    for (int document_id = 0; document_id < document_count; ++document_id) {
-        AddDocument(documents, stop_words, document_id, ReadLine());
+    for (int j = 0; j < 10000; ++j) {
+        s.insert(stra);
+        stra += "a"s;
+        if (j % 2 == 0) {
+            v.push_back(strb);
+            strb += "b"s;
+        } else {
+            v.push_back(stra);
+        }
     }
 
-    const string query = ReadLine();
-    // Вместо FindDocuments используйте FindTopDocuments
-    for (auto [relevance, document_id] : FindTopDocuments(documents, stop_words, query)) {
-        cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s
-             << endl;
+    cout << "Testing slow version" << endl;
+    // Замеряем время работы несколько раз, так как оно может отличаться от запуска к запуску
+    for (int i = 0; i < SAMPLE_COUNT; ++i) {
+        // Засекаем время запуска функции
+        auto begin = chrono::steady_clock::now();
+        CountNamesLong(s, v);
+        // Засекаем время завершения функции
+        auto end = chrono::steady_clock::now();
+
+        // Выводим время работы в микросекундах
+        cout << "Time difference Long = "s
+             << chrono::duration_cast<chrono::microseconds>(end - begin).count() << "[µs]"s << endl;
     }
+
+    // Вы можете замерить время работы функции CountNames и сравнить её с временем
+    // работы CountNamesLong
 }
