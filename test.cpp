@@ -1,53 +1,44 @@
 #include <algorithm>
 #include <iostream>
-#include <string>
 #include <vector>
-#include <cctype>
 
 using namespace std;
 
-vector<string> SplitIntoWords(const string& s) {
-    vector<string> words;
-    string word;
-        for (const char c : s) {
-            if (c == ' ') {
-                if (!word.empty()) {
-                    words.push_back(word);
-                    word.clear();
-                }
-            } else {
-                word += c;
-            }
-        }
-        if (!word.empty()) {
-            words.push_back(word);
-        }
-        words.erase(words.begin());
-        return words;
+vector<int> ReadNumbers() {
+    int count;
+    cin >> count;
+    //if (count != 0) {
+        vector<int> numbers;
+    for (int i = 0; i < count; ++i) {
+        int number;
+        cin >> number;
+        numbers.push_back(number);
     }
+    return numbers;
+    //}
+}
 
-string ToLowerCase(string s) {
-    for (char& ch : s) {
-        ch = tolower(static_cast<unsigned char>(ch));
+void PrintNumbers(const vector<int>& numbers) {
+    for (auto number : numbers) {
+        cout << number << " "s;
     }
-    return s;
 }
 
 int main() {
-    
-    string str;
-    getline(cin, str);
+    vector<int> numbers = ReadNumbers();
 
-    vector<string> v_s = SplitIntoWords(str);
+    sort(numbers.begin(), numbers.end(), [](int n1, int n2) {
+        if (n1 % 2 == 0 && n2 % 2 == 0) {
+            return n1 < n2;
+        }
+        if (n1 % 2 == 0 && n2 % 2 == 1) {
+            return true;
+        }
+        if (n1 % 2 == 1 && n2 % 2 == 0) {
+            return false;
+        }
+        return n1 > n2;          
+    });
 
-    sort(v_s.begin(), v_s.end(),
-    [](const string& left, const string& right) {
-        return ToLowerCase(left) < ToLowerCase(right);
-        });
-
-    for (const string& s : v_s) {
-        cout << s << " "s;
-    }
-    cout << " "s << endl;
-
+    PrintNumbers(numbers);
 }
