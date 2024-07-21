@@ -1,44 +1,53 @@
 #include <algorithm>
 #include <iostream>
+#include <string>
 #include <vector>
+#include <set>
 
 using namespace std;
 
-vector<int> ReadNumbers() {
-    int count;
-    cin >> count;
-    //if (count != 0) {
-        vector<int> numbers;
-    for (int i = 0; i < count; ++i) {
-        int number;
-        cin >> number;
-        numbers.push_back(number);
-    }
-    return numbers;
-    //}
+string ReadLine() {
+    string s;
+    getline(cin, s);
+    return s;
 }
 
-void PrintNumbers(const vector<int>& numbers) {
-    for (auto number : numbers) {
-        cout << number << " "s;
-    }
+int ReadLineWithNumber() {
+    int result;
+    cin >> result;
+    ReadLine();
+    return result;
 }
 
 int main() {
-    vector<int> numbers = ReadNumbers();
+    const int queryCount = ReadLineWithNumber();
 
-    sort(numbers.begin(), numbers.end(), [](int n1, int n2) {
-        if (n1 % 2 == 0 && n2 % 2 == 0) {
-            return n1 < n2;
-        }
-        if (n1 % 2 == 0 && n2 % 2 == 1) {
-            return true;
-        }
-        if (n1 % 2 == 1 && n2 % 2 == 0) {
-            return false;
-        }
-        return n1 > n2;          
+    vector<string> queries(queryCount);
+    for (string& query : queries) {
+        query = ReadLine();
+    }
+    const string buzzword = ReadLine();
+
+    cout << count_if(queries.begin(), queries.end(), [buzzword](const string& query) {
+            set<string> set_str;
+            string word;
+
+            for (const char c : query) {
+                if (c == ' ') {
+                    if (!word.empty()) {
+                        set_str.insert(word);
+                        word.clear();
+                    }
+                } else {
+                    word += c;
+                }
+            }
+            if (!word.empty()) {
+                set_str.insert(word);
+            }
+            return (set_str.count(buzzword));
     });
+    
+    cout << endl;
 
-    PrintNumbers(numbers);
 }
