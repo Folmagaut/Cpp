@@ -1,53 +1,41 @@
-#include <algorithm>
-#include <iostream>
+#include <map>
 #include <string>
 #include <vector>
-#include <set>
+#include <iostream>
+#include <algorithm>
 
 using namespace std;
 
-string ReadLine() {
-    string s;
-    getline(cin, s);
-    return s;
-}
-
-int ReadLineWithNumber() {
-    int result;
-    cin >> result;
-    ReadLine();
-    return result;
+int CountAndAddNewDogs(const vector<string>& new_dogs, const map<string, int>& max_amount,
+                       map<string, int>& shelter) {
+    
+    return count_if(new_dogs.begin(), new_dogs.end(), [&max_amount, &shelter](const string& n_d) {
+        if (shelter[n_d] == max_amount.at(n_d)) {
+            return false;
+        } else if (shelter.count(n_d) == 0) {
+            shelter[n_d] = 1;
+            return true;
+        } else if (shelter.at(n_d) < max_amount.at(n_d)) {
+            ++shelter.at(n_d);
+            return true;
+        }
+        return false;       
+        }
+    );
+    
 }
 
 int main() {
-    const int queryCount = ReadLineWithNumber();
+    map<string, int> shelter {
+        {"shepherd"s, 1},
+        {"corgi"s, 3},
+    };
 
-    vector<string> queries(queryCount);
-    for (string& query : queries) {
-        query = ReadLine();
-    }
-    const string buzzword = ReadLine();
+    const map<string, int> max_amount {
+        {"shepherd"s, 2},
+        {"corgi"s, 3},
+        {"shiba inu"s, 1},
+    };
 
-    cout << count_if(queries.begin(), queries.end(), [buzzword](const string& query) {
-            set<string> set_str;
-            string word;
-
-            for (const char c : query) {
-                if (c == ' ') {
-                    if (!word.empty()) {
-                        set_str.insert(word);
-                        word.clear();
-                    }
-                } else {
-                    word += c;
-                }
-            }
-            if (!word.empty()) {
-                set_str.insert(word);
-            }
-            return (set_str.count(buzzword));
-    });
-    
-    cout << endl;
-
+    cout << CountAndAddNewDogs({"shepherd"s, "shiba inu"s, "shiba inu"s, "corgi"s}, max_amount, shelter) << endl;
 }
