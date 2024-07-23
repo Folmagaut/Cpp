@@ -15,8 +15,8 @@ int CountAndAddNewDogs(const vector<string>& new_dogs, const map<string, int>& m
         } else if (shelter.count(n_d) == 0) {
             shelter[n_d] = 1;
             return true;
-        } else if (shelter.at(n_d) < max_amount.at(n_d)) {
-            ++shelter.at(n_d);
+        } else if (shelter[n_d] < max_amount.at(n_d)) {
+            ++shelter[n_d];
             return true;
         }
         return false;       

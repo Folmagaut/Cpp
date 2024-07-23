@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <set>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -47,54 +48,56 @@ struct Document {
     int relevance;
 };
 
-bool HasDocumentGreaterRelevance(const Document& lhs, const Document& rhs) {
-    return lhs.relevance > rhs.relevance;
-}
-
 class SearchServer {
-    
 public:
     void SetStopWords(const string& text) {
         for (const string& word : SplitIntoWords(text)) {
-        stop_words_.insert(word);
+            stop_words_.insert(word);
         }
     }
-    
+
     void AddDocument(int document_id, const string& document) {
         const vector<string> words = SplitIntoWordsNoStop(document);
-        documents_.push_back({document_id, words});
+        for (const string& word : words) {
+            documents_[word].insert(document_id);
+        }
     }
-    
+
     vector<Document> FindTopDocuments(const string& raw_query) const {
         const set<string> query_words = ParseQuery(raw_query);
-        auto matched_documents = FindAllDocuments(query_words);
-        sort(matched_documents.begin(), matched_documents.end(), HasDocumentGreaterRelevance);
+        const set<string> minus_words = ParseQueryMinusWords(raw_query);
+        auto matched_documents = FindAllDocuments(query_words, minus_words);
+
+        sort(matched_documents.begin(), matched_documents.end(),
+             [](const Document& lhs, const Document& rhs) {
+                 return lhs.relevance > rhs.relevance;
+             });
         if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
             matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
         }
         return matched_documents;
-}
-    
-private:
-    struct DocumentContent {
-        int id = 0;
-        vector<string> words;
-    };
-    
-    vector<DocumentContent> documents_;
-    
-    set<string> stop_words_;
-    
-    vector<string> SplitIntoWordsNoStop(const string& document) const {
-    vector<string> words;
-    for (const string& word : SplitIntoWords(document)) {
-        if (stop_words_.count(word) == 0) {
-            words.push_back(word);
-        }
     }
-    return words;
-}
-    
+
+private:
+
+    map<string, set<int>> documents_;
+
+    set<string> stop_words_;
+
+    bool IsStopWord(const string& word) const {
+        return stop_words_.count(word) > 0;
+    }
+
+    vector<string> SplitIntoWordsNoStop(const string& text) const {
+        vector<string> words;
+        for (const string& word : SplitIntoWords(text)) {
+            if (!IsStopWord(word)) {
+                words.push_back(word);
+            }
+        }
+        return words;
+    }
+
     set<string> ParseQuery(const string& text) const {
         set<string> query_words;
         for (const string& word : SplitIntoWordsNoStop(text)) {
@@ -103,51 +106,65 @@ private:
         return query_words;
     }
 
-    vector<Document> FindAllDocuments(const set<string>& query_words) const {
-        vector<Document> matched_documents;
-        for (const auto& document : documents_) {
-            const int relevance = MatchDocument(document, query_words);
-            if (relevance > 0) {
-                matched_documents.push_back({document.id, relevance});
+    set<string> ParseQueryMinusWords(const string& text) const {
+        set<string> minus_words;
+        for (const string& minus_word : SplitIntoWordsNoStop(text)) {
+            if (minus_word[0] == '-') {
+                minus_words.insert(minus_word.substr(1));
             }
         }
+        return minus_words;
+    }
+
+    vector<Document> FindAllDocuments(const set<string>& query_words, const set<string>& minus_words) const {
+        vector<Document> matched_documents;
+        Document doc;
+        map<int, int> id_rel;
+
+        for (const string& word : query_words) {
+            if (documents_.count(word)) {
+                for (int id : documents_.at(word)) {
+                    ++id_rel[id];
+                }
+            }
+        }
+
+        for (const string& minus_word : minus_words) {
+            if (documents_.count(minus_word)) {
+                for (int id : documents_.at(minus_word)) {
+                id_rel.erase(id);
+                }
+            }
+        }
+        for (const auto& i: id_rel) {
+            doc.id = i.first;
+            doc.relevance = i.second;
+            matched_documents.push_back(doc);
+            }
+        
         return matched_documents;
     }
-    
-    static int MatchDocument(const DocumentContent& content, const set<string>& query_words) {
-        if (query_words.empty()) {
-            return 0;
-        }
-        set<string> matched_words;
-        for (const string& word : content.words) {
-            if (matched_words.count(word) != 0) {
-                continue;
-            }
-            if (query_words.count(word) != 0) {
-                matched_words.insert(word);
-            }
-        }
-        return static_cast<int>(matched_words.size());
-        }    
 };
 
-    SearchServer CreateSearchServer() {
-        SearchServer search_server;
-        search_server.SetStopWords(ReadLine());
-        const int document_count = ReadLineWithNumber();
-        for (int document_id = 0; document_id < document_count; ++document_id) {
-            search_server.AddDocument(document_id, ReadLine());
-        }
-        return search_server;
+SearchServer CreateSearchServer() {
+    SearchServer search_server;
+    search_server.SetStopWords(ReadLine());
+
+    const int document_count = ReadLineWithNumber();
+    for (int document_id = 0; document_id < document_count; ++document_id) {
+        search_server.AddDocument(document_id, ReadLine());
     }
 
+    return search_server;
+}
+
 int main() {
-    // Создаём поисковую систему
     const SearchServer search_server = CreateSearchServer();
-    
+
     const string query = ReadLine();
-    
-    for (auto [document_id, relevance] : search_server.FindTopDocuments(query)) {
-    cout << "{ document_id = "s << document_id << ", relevance = "s << relevance << " }"s << endl;
+
+    for (const auto& i : search_server.FindTopDocuments(query)) {
+        cout << "{ document_id = "s << i.id << ", "
+             << "relevance = "s << i.relevance << " }"s << endl;
     }
 }
