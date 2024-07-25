@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cmath>
 
 using namespace std;
 
@@ -45,7 +46,7 @@ vector<string> SplitIntoWords(const string& text) {
 
 struct Document {
     int id;
-    int relevance;
+    double relevance;
 };
 
 class SearchServer {
@@ -57,10 +58,15 @@ public:
     }
 
     void AddDocument(int document_id, const string& document) {
+        //map<int, double> id_tf;
         const vector<string> words = SplitIntoWordsNoStop(document);
+        int count_all_words_in_document = words.size();
+        double tf = 1.0 / count_all_words_in_document;
         for (const string& word : words) {
-            documents_[word].insert(document_id);
+            double id_tf = tf * count(words.begin(), words.end(), word);
+            documents_[word].insert({document_id, id_tf}); //= id_tf;
         }
+        ++document_count_;
     }
 
     vector<Document> FindTopDocuments(const string& raw_query) const {
@@ -80,7 +86,9 @@ public:
 
 private:
 
-    map<string, set<int>> documents_;
+    int document_count_ = 0;
+
+    map<string, map<int, double>> documents_;
 
     set<string> stop_words_;
 
@@ -119,24 +127,27 @@ private:
     vector<Document> FindAllDocuments(const set<string>& query_words, const set<string>& minus_words) const {
         vector<Document> matched_documents;
         Document doc;
-        map<int, int> id_rel;
+        map<int, double> id_tf_idf;
 
         for (const string& word : query_words) {
-            if (documents_.count(word)) {
-                for (int id : documents_.at(word)) {
-                    ++id_rel[id];
+            if (documents_.count(word)) {    
+                double idf = log(static_cast<double>(document_count_) / documents_.at(word).size());        
+                for (auto& id_tf : documents_.at(word)) {
+                    double tf_idf = idf * id_tf.second;
+                    id_tf_idf[id_tf.first] += tf_idf;
                 }
-            }
+            }  
         }
 
         for (const string& minus_word : minus_words) {
             if (documents_.count(minus_word)) {
-                for (int id : documents_.at(minus_word)) {
-                id_rel.erase(id);
+                for (auto& id_tf : documents_.at(minus_word)) {
+                id_tf_idf.erase(id_tf.first);
                 }
             }
         }
-        for (const auto& i: id_rel) {
+
+        for (const auto& i: id_tf_idf) {
             doc.id = i.first;
             doc.relevance = i.second;
             matched_documents.push_back(doc);
@@ -154,7 +165,6 @@ SearchServer CreateSearchServer() {
     for (int document_id = 0; document_id < document_count; ++document_id) {
         search_server.AddDocument(document_id, ReadLine());
     }
-
     return search_server;
 }
 

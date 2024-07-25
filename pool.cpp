@@ -150,13 +150,13 @@ private:
             if (documents_.count(minus_word)) {
                 for (int id : documents_.at(minus_word)) {
                 id_rel.erase(id);
+                }
             }
-            }
+        }
         for (const auto& i: id_rel) {
             doc.id = i.first;
             doc.relevance = i.second;
             matched_documents.push_back(doc);
-            }
         }
     return matched_documents;
     }
