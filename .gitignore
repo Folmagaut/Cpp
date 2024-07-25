@@ -1,1 +1,5 @@
 *.doc
+*.exe
+pool.cpp
+test.cpp
+LF_q.cpp
