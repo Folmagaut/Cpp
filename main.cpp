@@ -59,13 +59,11 @@ public:
     }
 
     void AddDocument(int document_id, const string& document) {
-        //map<int, double> id_tf;
         const vector<string> words = SplitIntoWordsNoStop(document);
         int count_all_words_in_document = words.size();
-        double tf = 1.0 / count_all_words_in_document;
+        double once_met_word_in_document_tf = 1.0 / count_all_words_in_document;
         for (const string& word : words) {
-            double id_tf = tf * count(words.begin(), words.end(), word);
-            documents_[word].insert({document_id, id_tf}); //= id_tf;
+            documents_[word][document_id] += once_met_word_in_document_tf;
         }
         ++document_count_;
     }
@@ -125,6 +123,11 @@ private:
         return minus_words;
     }
 
+    double CountIdf (const string& word) const {
+        double idf = log(static_cast<double>(document_count_) / documents_.at(word).size());
+        return idf;
+    }
+
     vector<Document> FindAllDocuments(const set<string>& query_words, const set<string>& minus_words) const {
         vector<Document> matched_documents;
         Document doc;
@@ -132,7 +135,7 @@ private:
 
         for (const string& word : query_words) {
             if (documents_.count(word)) {    
-                double idf = log(static_cast<double>(document_count_) / documents_.at(word).size());        
+                double idf = CountIdf(word);
                 for (auto& id_tf : documents_.at(word)) {
                     double tf_idf = idf * id_tf.second;
                     id_tf_idf[id_tf.first] += tf_idf;
