@@ -25,6 +25,19 @@ int ReadLineWithNumber() {
     return result;
 }
 
+vector<int> ReadLineRatings() {
+    vector<int> document_ratings;
+    int n;
+    cin >> n;
+    for (int i = 0; i < n; ++i) {
+        int m;
+        cin >> m;
+        document_ratings.push_back(m); 
+    }
+    ReadLine();
+    return document_ratings;
+}
+
 vector<string> SplitIntoWords(const string& text) {
     vector<string> words;
     string word;
@@ -46,6 +59,7 @@ vector<string> SplitIntoWords(const string& text) {
 }
 
 struct Document {
+    int rating;
     int id;
     double relevance;
 };
@@ -58,7 +72,7 @@ public:
         }
     }
 
-    void AddDocument(int document_id, const string& document) {
+    void AddDocument(int document_id, const string& document, const vector<int>& ratings) {
         const vector<string> words = SplitIntoWordsNoStop(document);
         int count_all_words_in_document = words.size();
         double once_met_word_in_document_tf = 1.0 / count_all_words_in_document;
@@ -66,6 +80,8 @@ public:
             documents_[word][document_id] += once_met_word_in_document_tf;
         }
         ++document_count_;
+        int rating = ComputeAverageRating(ratings);
+        document_ratings_[document_id] = rating;
     }
 
     vector<Document> FindTopDocuments(const string& raw_query) const {
@@ -86,7 +102,7 @@ public:
 private:
 
     int document_count_ = 0;
-
+    map<int, int> document_ratings_;
     map<string, map<int, double>> documents_;
 
     set<string> stop_words_;
@@ -103,6 +119,18 @@ private:
             }
         }
         return words;
+    }
+
+    static int ComputeAverageRating(const vector<int>& ratings) {
+        int rate = 0;
+        int rate_size = ratings.size();
+        for (int i = 0; i < rate_size; ++i) {
+            rate += ratings[i];
+        }
+        if (rate_size != 0) {
+            rate = rate / rate_size;
+        }
+        return rate;
     }
 
     set<string> ParseQuery(const string& text) const {
@@ -154,6 +182,7 @@ private:
         for (const auto& i: id_tf_idf) {
             doc.id = i.first;
             doc.relevance = i.second;
+            doc.rating = document_ratings_.at(i.first);
             matched_documents.push_back(doc);
             }
         
@@ -164,10 +193,11 @@ private:
 SearchServer CreateSearchServer() {
     SearchServer search_server;
     search_server.SetStopWords(ReadLine());
-
     const int document_count = ReadLineWithNumber();
     for (int document_id = 0; document_id < document_count; ++document_id) {
-        search_server.AddDocument(document_id, ReadLine());
+        const string& document = ReadLine();
+        const vector<int>& rates = ReadLineRatings();
+        search_server.AddDocument(document_id, document, rates);
     }
     return search_server;
 }
@@ -176,9 +206,8 @@ int main() {
     const SearchServer search_server = CreateSearchServer();
 
     const string query = ReadLine();
-
-    for (const auto& i : search_server.FindTopDocuments(query)) {
-        cout << "{ document_id = "s << i.id << ", "
-             << "relevance = "s << i.relevance << " }"s << endl;
+    for (auto [rating, document_id, relevance] : search_server.FindTopDocuments(query)) {
+        cout << "{ document_id = "s << document_id << ", "s
+             << "relevance = "s << relevance << ", "s << "rating = "s << rating << " }"s << endl;
     }
 }
