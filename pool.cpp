@@ -71,15 +71,11 @@ public:
         document_ratings_.emplace(document_id, ComputeAverageRating(ratings));
     }
 
-    vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {            
+    vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status = DocumentStatus::ACTUAL) const {            
         const Query query = ParseQuery(raw_query);
         vector<Document> matched_documents_with_status;
         auto matched_documents = FindAllDocuments(query);
-       /* for (const auto& i : matched_documents) {
-            if (matched_documents[i].document_id  ) {
-
-            }
-        }*/
+        
         for (size_t i = 0; i < matched_documents.size(); ++i) {
             if (id_status_.at(matched_documents[i].id) == status) {
                 matched_documents_with_status.push_back(matched_documents[i]);
@@ -216,7 +212,7 @@ int main() {
     search_server.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {5, -12, 2, 1});
     search_server.AddDocument(3, "ухоженный скворец евгений"s,         DocumentStatus::BANNED, {9});
     cout << "ACTUAL:"s << endl;
-    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::ACTUAL)) {
+    for (const Document& document : search_server.FindTopDocuments("пушистый ухоженный кот"s)) {
         PrintDocument(document);
     }
     cout << "BANNED:"s << endl;
