@@ -1,5 +1,59 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+using namespace std;
+
+template <typename Document, typename Term>
+
+vector<double> ComputeTfIdfs (Document documents, Term term) {
+    vector<double> tf_idf;
+    double tf = 0;
+    double idf = 0;
+    int idf_count = 0;
+    double inv_term_count = 0;
+    for (const auto& document : documents) {
+        if (!document.empty() && (count(document.begin(), document.end(), term)) > 0) {
+            inv_term_count = 1.0 / document.size();
+            tf = inv_term_count * count(document.begin(), document.end(), term);
+            ++idf_count;
+        } else {
+            tf = 0;
+        }
+        tf_idf.push_back(tf);
+    }
+    if (idf_count > 0) {
+        idf = log(static_cast<double>(documents.size()) / static_cast<double>(idf_count));
+    }
+    for (auto& tf : tf_idf) {
+        tf = tf * idf;
+    }
+        
+    return tf_idf;
+}
+
+int main() {
+    const vector<vector<string>> documents = {
+        {"белый"s, "кот"s, "и"s, "модный"s, "ошейник"s},
+        {"пушистый"s, "кот"s, "пушистый"s, "хвост"s},
+        {"ухоженный"s, "пёс"s, "выразительные"s, "глаза"s},
+    };
+    const auto tf_idfs = ComputeTfIdfs(documents, "кот"s);
+    for (const double tf_idf : tf_idfs) {
+        cout << tf_idf << " "s;
+    }
+    cout << endl;
+    return 0;
+}
+
+/*////////////////////////////////////////////////////////
+#include <algorithm>
 #include <iostream>
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 using namespace std;
@@ -11,8 +65,37 @@ map<Term, int> ComputeTermFreqs(const vector<Term>& terms) {
     }
     return term_freqs;
 }
+
+struct Animal {
+    string name;
+    int age;
+    int freq;
+};
+
 pair<string, int> FindMaxFreqAnimal(const vector<pair<string, int>>& animals) {
     // верните животного с максимальной частотой
+    map<pair<string, int>, int> map_of_animals_and_freqs;
+    vector<Animal> animals_and_freqs;
+    pair<string, int> max_freq_animal;
+    for (const auto& animal : animals) {
+        ++map_of_animals_and_freqs[animal];
+    }
+
+    for (const auto& [name_and_age, freq] : map_of_animals_and_freqs) {
+        animals_and_freqs.push_back({name_and_age.first, name_and_age.second, freq});
+    }
+    
+    sort(animals_and_freqs.begin(), animals_and_freqs.end(),
+        [] (const Animal& lhs, const Animal& rhs) {
+            if (lhs.freq == rhs.freq) {
+                return lhs.name < rhs.name;
+            } else {
+                return lhs.freq > rhs.freq;
+            }
+    });
+    max_freq_animal.first = animals_and_freqs[0].name;
+    max_freq_animal.second = animals_and_freqs[0].age;
+    return max_freq_animal;
 }
 
 int main() {
@@ -27,7 +110,7 @@ int main() {
     cout << max_freq_animal.first << " "s << max_freq_animal.second << endl;
 }
 
-/*///////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
 #include <iostream>
 #include <map>
 #include <string>
