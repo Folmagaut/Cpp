@@ -1,3 +1,115 @@
+#include <iostream>
+#include <map>
+#include <set>
+#include <vector>
+
+using namespace std;
+template <typename AnyType>
+ostream& operator<<(ostream& out, const set<AnyType>& container);
+template <typename AnyType>
+ostream& operator<<(ostream& out, const vector<AnyType>& container);
+template <typename AnyKey, typename AnyValue>
+/* ostream& operator<<(ostream& out, const pair<AnyKey, AnyValue>& container);
+template <typename AnyKey, typename AnyValue> */
+ostream& operator<<(ostream& out, const map<AnyKey, AnyValue>& container);
+
+template <typename AnyKey, typename AnyValue>
+ostream& operator<<(ostream& out, const pair<AnyKey, AnyValue>& container) {
+    out << "(";
+    out << container.first;
+    out << ", ";
+    out << container.second;    
+    out << ")";
+    return out;
+}
+
+/* template <typename AnyKey, typename AnyValue>
+void PrintPair(ostream& out, const pair<AnyKey, AnyValue>& container) {
+    out << "(";
+    out << container.first;
+    out << ", ";
+    out << container.second;    
+    out << ")";
+} */
+
+template <typename Container>
+void Print(ostream& out, const Container& container) {
+    bool is_first = true;
+    for (const auto& element : container) {
+        if (!is_first) {
+            out << ", "s;
+        }
+        is_first = false;
+        out << element;
+    }
+}
+
+template <typename AnyType>
+ostream& operator<<(ostream& out, const set<AnyType>& container) {
+    out << "{";
+    Print(out, container);
+    out << "}";
+    return out;
+}
+
+template <typename AnyType>
+ostream& operator<<(ostream& out, const vector<AnyType>& container) {
+    out << "[";
+    Print(out, container);
+    out << "]";
+    return out;
+}
+
+template <typename AnyKey, typename AnyValue>
+ostream& operator<<(ostream& out, const map<AnyKey, AnyValue>& container) {
+    out << "<";
+    Print(out, container);
+    out << ">";
+    return out;
+}
+
+int main() {
+const set<string> cats = {"Мурка"s, "Белка"s, "Георгий"s, "Рюрик"s};
+cout << cats << endl;
+const vector<int> ages = {10, 5, 2, 12};
+cout << ages << endl;
+const map<string, int> cat_ages = {
+    {"Мурка"s, 10}, 
+    {"Белка"s, 5},
+    {"Георгий"s, 2}, 
+    {"Рюрик"s, 12}
+};
+cout << cat_ages << endl;
+}
+
+/*
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+template <typename AnyType>
+
+ostream& operator<<(ostream& out, const vector<AnyType>& container) {
+    size_t i = 0;
+    for (const AnyType& element : container) {
+        ++i;
+        if (container.size() == i) {
+            out << element;
+        } else {
+            out << element << ", "s;
+        }
+    }
+    return out;
+}  
+   
+int main() {
+    const vector<int> ages = {10, 5, 2, 12};
+    cout << ages << endl;
+    return 0;
+}
+
+//////////////////////////////////////////////////////////////////////////
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -49,7 +161,7 @@ int main() {
     return 0;
 }
 
-/*////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////
 #include <algorithm>
 #include <iostream>
 #include <map>

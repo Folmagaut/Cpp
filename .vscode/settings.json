@@ -9,6 +9,7 @@
         "limits": "cpp",
         "iostream": "cpp",
         "tuple": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "iosfwd": "cpp"
     }
 }
