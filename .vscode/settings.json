@@ -10,6 +10,7 @@
         "iostream": "cpp",
         "tuple": "cpp",
         "format": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "random": "cpp"
     }
 }

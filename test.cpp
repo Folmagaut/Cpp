@@ -1,3 +1,49 @@
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+struct Animal {
+    string name;
+    int age;
+    double weight;
+};
+
+template <typename Container, typename KeyMapper>
+void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
+    sort(container.begin(), container.end(), [key_mapper, reverse](const auto& lhs, const auto& rhs) {
+        if (reverse) {
+            return key_mapper(lhs) > key_mapper(rhs);
+        } else {
+            return key_mapper(lhs) < key_mapper(rhs);
+        }
+    });
+}
+
+void PrintNames(const vector<Animal>& animals) {
+    for (const Animal& animal : animals) {
+        cout << animal.name << ' ';
+    }
+    cout << endl;
+}
+
+int main() {
+    vector<Animal> animals = {
+        {"Мурка"s,   10, 5},
+        {"Белка"s,   5,  1.5},
+        {"Георгий"s, 2,  4.5},
+        {"Рюрик"s,   12, 3.1},
+    };
+    PrintNames(animals);
+    SortBy(animals, [](const Animal& animal) { return animal.name; }, true);
+    PrintNames(animals);
+    SortBy(animals, [](const Animal& animal) { return animal.weight; });
+    PrintNames(animals);
+    return 0;
+}
+
+/*
 #include <iostream>
 #include <map>
 #include <set>
@@ -9,8 +55,8 @@ ostream& operator<<(ostream& out, const set<AnyType>& container);
 template <typename AnyType>
 ostream& operator<<(ostream& out, const vector<AnyType>& container);
 template <typename AnyKey, typename AnyValue>
-/* ostream& operator<<(ostream& out, const pair<AnyKey, AnyValue>& container);
-template <typename AnyKey, typename AnyValue> */
+//ostream& operator<<(ostream& out, const pair<AnyKey, AnyValue>& container);
+//template <typename AnyKey, typename AnyValue>
 ostream& operator<<(ostream& out, const map<AnyKey, AnyValue>& container);
 
 template <typename AnyKey, typename AnyValue>
@@ -23,14 +69,14 @@ ostream& operator<<(ostream& out, const pair<AnyKey, AnyValue>& container) {
     return out;
 }
 
-/* template <typename AnyKey, typename AnyValue>
-void PrintPair(ostream& out, const pair<AnyKey, AnyValue>& container) {
-    out << "(";
-    out << container.first;
-    out << ", ";
-    out << container.second;    
-    out << ")";
-} */
+//template <typename AnyKey, typename AnyValue>
+//void PrintPair(ostream& out, const pair<AnyKey, AnyValue>& container) {
+ //   out << "(";
+ //   out << container.first;
+  //  out << ", ";
+  //  out << container.second;    
+  //  out << ")";
+//}
 
 template <typename Container>
 void Print(ostream& out, const Container& container) {
@@ -82,7 +128,7 @@ const map<string, int> cat_ages = {
 cout << cat_ages << endl;
 }
 
-/*
+//////////////////////////////////////////////////////////////////////////
 #include <iostream>
 #include <vector>
 

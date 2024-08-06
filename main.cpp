@@ -41,7 +41,6 @@ vector<string> SplitIntoWords(const string& text) {
     if (!word.empty()) {
         words.push_back(word);
     }
-
     return words;
 }
 
@@ -232,7 +231,6 @@ private:
         }
         return matched_documents;
     }
-
 };
 
 void PrintDocument(const Document& document) {
