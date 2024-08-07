@@ -10,7 +10,13 @@ struct Animal {
     double weight;
 };
 
-template <typename Container, typename KeyMapper>
+enum class AnimalSortKey {
+    AGE,     // по полю age
+    WEIGHT,  // по полю weight
+    RELATIVE_WEIGHT  // по weight / age
+};
+
+/* template <typename Container, typename KeyMapper>
 void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
     sort(container.begin(), container.end(), [key_mapper, reverse](const auto& lhs, const auto& rhs) {
         if (reverse) {
@@ -19,6 +25,35 @@ void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
             return key_mapper(lhs) < key_mapper(rhs);
         }
     });
+} */
+
+template <typename Container, typename KeyMapper>
+void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
+        // если KeyMapper — это AnimalSortKey...
+    if constexpr (is_same_v<KeyMapper, AnimalSortKey>) {
+        switch (key_mapper) {
+            case AnimalSortKey::AGE:
+                return SortBy(container, [](const auto& x) { return x.age; }, reverse);
+            case AnimalSortKey::WEIGHT:
+                return SortBy(container, [](const auto& x) { return x.weight; }, reverse);
+            case AnimalSortKey::RELATIVE_WEIGHT:
+                return SortBy(container, [](const auto& x) { return x.weight / x.age; }, reverse);
+        }
+                // вышли из функции, остальное снаружи if
+    } else {
+        if (reverse) {
+            sort(container.begin(), container.end(),
+             [key_mapper](const auto& lhs, const auto& rhs) {
+                return key_mapper(lhs) > key_mapper(rhs);
+             });
+        } else {
+            sort(container.begin(), container.end(),
+             [key_mapper](const auto& lhs, const auto& rhs) {
+                return key_mapper(lhs) < key_mapper(rhs);
+             });
+        }
+    }
+
 }
 
 void PrintNames(const vector<Animal>& animals) {
