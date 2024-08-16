@@ -11,6 +11,8 @@
         "tuple": "cpp",
         "format": "cpp",
         "iosfwd": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "numeric": "cpp",
+        "algorithm": "cpp"
     }
 }

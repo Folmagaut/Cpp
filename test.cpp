@@ -1,3 +1,156 @@
+
+
+/*
+#include <cassert>
+#include <iostream>
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
+
+using namespace std;
+
+class Synonyms {
+public:
+    void Add(const string& first_word, const string& second_word) {
+        synonyms_[first_word].insert(second_word);
+        synonyms_[second_word].insert(first_word);
+    }
+
+    size_t GetSynonymCount(const string& word) const {
+        if (synonyms_.count(word) != 0) {
+            return synonyms_.at(word).size();
+        }
+        return 0;
+    }
+
+    bool AreSynonyms(const string& first_word, const string& second_word) const {
+        if (synonyms_.count(first_word)) {
+            if (synonyms_.at(first_word).count(second_word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+private:
+    map<string, set<string>> synonyms_;
+};
+
+void TestAddingSynonymsIncreasesTheirCount() {
+    Synonyms synonyms;
+    assert(synonyms.GetSynonymCount("music"s) == 0);
+    assert(synonyms.GetSynonymCount("melody"s) == 0);
+
+    synonyms.Add("music"s, "melody"s);
+    assert(synonyms.GetSynonymCount("music"s) == 1);
+    assert(synonyms.GetSynonymCount("melody"s) == 1);
+
+    synonyms.Add("music"s, "tune"s);
+    assert(synonyms.GetSynonymCount("music"s) == 2);
+    assert(synonyms.GetSynonymCount("tune"s) == 1);
+    assert(synonyms.GetSynonymCount("melody"s) == 1);
+}
+
+void TestAreSynonyms() {
+    Synonyms synonyms;
+
+    assert(!synonyms.AreSynonyms("winner"s, "champion"s));
+
+    synonyms.Add("winner"s, "champion"s);
+
+    assert(synonyms.AreSynonyms("winner"s, "champion"s));
+    assert(synonyms.AreSynonyms("champion"s, "winner"s));
+    assert(!synonyms.AreSynonyms("winner"s, "dinner"s));
+    assert(!synonyms.AreSynonyms("dinner"s, "winner"s));
+
+    synonyms.Add("good"s, "nice"s);
+
+    assert(!synonyms.AreSynonyms("good"s, "champion"s));
+    assert(!synonyms.AreSynonyms("good"s, "winner"s));
+    assert(!synonyms.AreSynonyms("nice"s, "winner"s));
+    assert(synonyms.AreSynonyms("good"s, "nice"s));
+
+    assert(!synonyms.AreSynonyms("music"s, "tune"s));
+}
+
+void TestSynonyms() {
+    TestAddingSynonymsIncreasesTheirCount();
+    TestAreSynonyms();
+}
+
+int main() {
+    TestSynonyms();
+
+    Synonyms synonyms;
+
+    string line;
+    while (getline(cin, line)) {
+        istringstream command(line);
+        string action;
+        command >> action;
+
+        if (action == "ADD"s) {
+            string first_word, second_word;
+            command >> first_word >> second_word;
+            synonyms.Add(first_word, second_word);
+        } else if (action == "COUNT"s) {
+            string word;
+            command >> word;
+            cout << synonyms.GetSynonymCount(word) << endl;
+        } else if (action == "CHECK"s) {
+            string first_word, second_word;
+            command >> first_word >> second_word;
+            if (synonyms.AreSynonyms(first_word, second_word)) {
+                cout << "YES"s << endl;
+            } else {
+                cout << "NO"s << endl;
+            }
+        } else if (action == "EXIT"s) {
+            break;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// Определяет, будет ли слово палиндромом
+// text может быть строкой, содержащей строчные буквы английского алфавита и пробелы
+// Пустые строки и строки, состоящие только из пробелов, - это не палиндромы
+bool IsPalindrome(const string& text) {
+    vector<char> letters, inverse_letters;
+    for (const char c : text) {
+        if (c != ' ') {
+            letters.push_back(c);
+        }
+    }
+    if (!letters.empty()) {
+        inverse_letters = letters;
+        reverse(inverse_letters.begin(), inverse_letters.end());
+        if (letters == inverse_letters) {
+        return true;
+        }
+    }
+    return false;    
+}
+
+int main() {
+    string text;
+    getline(cin, text);
+
+    if (IsPalindrome(text)) {
+        cout << "palindrome"s << endl;
+    } else {
+        cout << "not a palindrome"s << endl;
+    }
+}
+///////////////////////////////////////////////////////////////////////////////////////////////
 #include <algorithm>
 #include <iostream>
 #include <vector>
@@ -27,7 +180,7 @@ void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
     });
 } */
 
-template <typename Container, typename KeyMapper>
+/*template <typename Container, typename KeyMapper>
 void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
         // если KeyMapper — это AnimalSortKey...
     if constexpr (is_same_v<KeyMapper, AnimalSortKey>) {
@@ -78,7 +231,7 @@ int main() {
     return 0;
 }
 
-/*
+
 #include <iostream>
 #include <map>
 #include <set>
