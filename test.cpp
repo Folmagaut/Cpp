@@ -1,6 +1,299 @@
-
-
 /*
+/////////////////////////////////////////////////////////////////////
+#include <iostream>
+#include <numeric>
+
+using namespace std;
+
+class Cat {
+public:
+    explicit Cat(const string& name)
+        : name_(name)
+    {
+    }
+    const string& GetName() const {
+        return name_;
+    }
+private:
+    string name_;
+};
+
+void Feed(const Cat& cat) {
+    cout << cat.GetName() << ", eat some milk"s << endl;
+}
+
+int main() {
+    Cat cat1{"Матроскин"s};
+    Feed(cat1); // Выглядит нормально
+    Feed(Cat{"Леопольд"s}); // И это тоже
+
+    // Следующие 2 строки выглядят странно: мы кормим какой-то объект и строку
+    //Feed({"Том"s});
+    //Feed("Котёнок по имени Гав"s);
+}
+////////////////////////////////////////////////////////////////////
+#include <iostream>
+#include <numeric>
+
+using namespace std;
+
+class Rational {
+public:
+    Rational() = default;
+
+    Rational(int numerator) : numerator_(numerator), denominator_(1) {
+    }
+
+    Rational(int numerator, int denominator) : numerator_(numerator), denominator_(denominator) {
+        Normalize();
+    }
+
+    int Numerator() const {
+        return numerator_;
+    }
+
+    int Denominator() const {
+        return denominator_;
+    }
+
+private:
+    void Normalize() {
+        if (denominator_ < 0) {
+            numerator_ = -numerator_;
+            denominator_ = -denominator_;
+        }
+        const int divisor = gcd(numerator_, denominator_);
+        numerator_ /= divisor;
+        denominator_ /= divisor;
+    }
+
+    int numerator_ = 0;
+    int denominator_ = 1;
+};
+
+int main() {
+    const Rational scale(-6, -24);
+    //const Rational scale;
+
+    cout << scale.Numerator() << "/"s << scale.Denominator() << endl;
+}
+
+
+/////////////////////////////////////////////////////////////////////
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+class Cat {
+public:
+    Cat(const string& name)
+        : name_(name)
+    {
+    }
+    string GetName() const {
+        return name_;
+    }
+private:
+    string name_;
+};
+
+class Witch {
+public:
+    Witch(const string& catName)
+        : cat_(catName)
+    {
+        cout << "Моего кота зовут "s << cat_.GetName() << endl;
+    }
+private:
+    Cat cat_;
+};
+
+int main() {
+    Witch hermione{"Живоглот"s};
+}
+
+////////////////////////////////////////////////////////////////////////
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+
+using namespace std;
+
+class Cat {
+public:
+    Cat(const string& name)
+        : name_(name)
+    {
+    }
+    string GetName() const {
+        return name_;
+    }
+private:
+    string name_;
+};
+
+class Witch {
+public:
+    Witch(const string& catName)
+        : cat_(catName)
+    {
+        cout << "Моего кота зовут "s << cat_.GetName() << endl;
+    }
+private:
+    Cat cat_;
+};
+
+int main() {
+    Witch hermione{"Живоглот"s};
+}
+
+///////////////////////////////////////////////////////
+#include <numeric>
+#include <iostream>
+
+using namespace std;
+
+class Rational {
+public:
+    // Явно сообщаем компилятору, что в этом классе нужно создать конструктор по умолчанию
+    Rational() = default;
+
+    // Параметризованный конструктор
+
+    Rational(int numerator) {
+        numerator_ = numerator;
+        denominator_ = 1;
+    }
+
+    Rational(int numerator, int denominator) {
+        if (denominator != 0) {
+            bool subz = false;
+            //bool den_subz = false;
+            if (numerator < 0) {
+                numerator *= -1;
+                subz = !subz;
+            }
+
+            if (denominator < 0) {
+                denominator *= -1;
+                subz = !subz;
+            }
+            int g_c_d = gcd(numerator, denominator);
+            numerator = numerator / g_c_d;
+            denominator = denominator / g_c_d;
+            if (subz) {
+                numerator_ = -numerator;
+            } else {
+                numerator_ = numerator;
+            }
+
+            denominator_ = denominator;
+            
+        }
+
+    }
+
+    int Numerator() const {
+        return numerator_;
+    }
+
+    int Denominator() const {
+        return denominator_;
+    }
+
+private:
+    // Задаём значения по умолчанию для числителя и знаменателя
+    int numerator_ = 0;
+    int denominator_ = 1;
+};
+
+int main() {
+    const Rational scale(-6, -24);
+    //const Rational scale;
+
+    cout << scale.Numerator() << "/"s << scale.Denominator() << endl;
+
+    //cout << gcd(24, 12) << endl;
+}
+
+//////////////////////////////////////////////////////////////////////////
+#include <string>
+
+using namespace std;
+
+enum class AnimalType {
+    Cat,
+    Dog,
+    Mouse,
+};
+
+class Animal {
+public:
+    
+    Animal (AnimalType animal_type, string name, string owner_name) {
+        type_ = animal_type;
+        name_ = name;
+        owner_name_ = owner_name;
+    }
+    
+    AnimalType GetType() const {
+        return type_;
+    }
+
+    const string& GetName() const {
+        return name_;
+    }
+
+    const string& GetOwnerName() const {
+        return owner_name_;
+    }
+
+private:
+    AnimalType type_;
+    string name_;
+    string owner_name_;
+};
+
+//////////////////////////////////////////////////////////////////////////////////////
+#include <iostream>
+
+using namespace std;
+
+class Rational {
+public:
+    // Явно сообщаем компилятору, что в этом классе нужно создать конструктор по умолчанию
+    Rational() = default;
+
+    // Параметризованный конструктор
+    Rational(int numerator, int denominator) {
+        numerator_ = numerator;
+        denominator_ = denominator;
+    }
+
+    int Numerator() const {
+        return numerator_;
+    }
+
+    int Denominator() const {
+        return denominator_;
+    }
+
+private:
+    // Задаём значения по умолчанию для числителя и знаменателя
+    int numerator_ = 0;
+    int denominator_ = 1;
+};
+
+int main() {
+    const Rational scale(1, 3);
+    //const Rational scale;
+
+    cout << scale.Numerator() << "/"s << scale.Denominator() << endl;
+}
+
+///////////////////////////////////////////////////////////////////////
 #include <cassert>
 #include <iostream>
 #include <map>
@@ -169,18 +462,18 @@ enum class AnimalSortKey {
     RELATIVE_WEIGHT  // по weight / age
 };
 
-/* template <typename Container, typename KeyMapper>
-void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
-    sort(container.begin(), container.end(), [key_mapper, reverse](const auto& lhs, const auto& rhs) {
-        if (reverse) {
-            return key_mapper(lhs) > key_mapper(rhs);
-        } else {
-            return key_mapper(lhs) < key_mapper(rhs);
-        }
-    });
-} */
+// template <typename Container, typename KeyMapper>
+// void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
+//    sort(container.begin(), container.end(), [key_mapper, reverse](const auto& lhs, const auto& rhs) {
+//        if (reverse) {
+//            return key_mapper(lhs) > key_mapper(rhs);
+//        } else {
+//            return key_mapper(lhs) < key_mapper(rhs);
+//        }
+//    });
+//}
 
-/*template <typename Container, typename KeyMapper>
+template <typename Container, typename KeyMapper>
 void SortBy(Container& container, KeyMapper key_mapper, bool reverse = false) {
         // если KeyMapper — это AnimalSortKey...
     if constexpr (is_same_v<KeyMapper, AnimalSortKey>) {

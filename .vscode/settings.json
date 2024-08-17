@@ -13,6 +13,7 @@
         "iosfwd": "cpp",
         "random": "cpp",
         "numeric": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "unordered_set": "cpp"
     }
 }
