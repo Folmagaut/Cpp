@@ -78,7 +78,7 @@ public:
     }
 
     explicit SearchServer(const string& text) : stop_words_({}) {
-        for (const auto& word : SplitIntoWords(text)) {
+        for (const string& word : SplitIntoWords(text)) {
             stop_words_.insert(word);
         }
     }
