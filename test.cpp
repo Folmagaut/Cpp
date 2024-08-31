@@ -1,4 +1,83 @@
 /*
+///////////////////////////////////////////////
+#include <iostream>
+
+using namespace std;
+
+bool IsPowOfTwo(int number) {
+    
+    if (number == 0) {
+        return false;
+    }
+    
+    if (number == 1) {
+        return true;
+    }
+
+    if (number % 2 == 0) {
+        return IsPowOfTwo(number / 2);
+    } else {
+        return false;
+    }
+}
+
+int main() {
+    int result = IsPowOfTwo(4);
+    cout << result << endl;
+    return 0;
+}
+
+///////////////////////////////////////////////////////
+#include <iostream>
+#include <cstdint>
+
+using namespace std;
+
+uint64_t Fibonacci(int position) {
+    if (position == 0) {
+        return 0;
+    } else if (position == 1) {
+        return 1;
+    } else {
+        return Fibonacci(position - 1) + Fibonacci(position - 2);
+    }
+}
+
+int main() {
+    cout << "Значение числа Фибоначчи " << Fibonacci(44) << " для позиции 44" << endl;
+    return 0;
+}
+
+//////////////////////////////////////////////////////////////
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+template <typename It>
+void PrintRange(It range_begin, It range_end) {
+    for (auto it = range_begin; it != range_end; ++it) {
+        cout << *it << " "s;
+    }
+    cout << endl;
+}
+
+template <typename Container>
+void EraseAndPrint(Container& container, int pos, int del_begin, int del_end) {
+    container.erase(container.begin() + pos);
+    PrintRange(container.begin(), container.end());
+    container.erase(container.begin() + del_begin, container.begin() + del_end);
+    PrintRange(container.begin(), container.end());
+}
+
+int main() {
+    vector<string> langs = {"Python"s, "Java"s, "C#"s, "Ruby"s, "C++"s};
+    EraseAndPrint(langs, 0, 0, 2);
+    return 0;
+}
+
 /////////////////////////////////////////////////
 #include <iostream>
 #include <numeric>
