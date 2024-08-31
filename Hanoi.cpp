@@ -68,7 +68,7 @@ void SolveHanoi(vector<Tower>& towers) {
 
 int main() {
     int towers_num = 3;
-    int disks_num = 8;
+    int disks_num = 3;
     vector<Tower> towers;
     // Добавим в вектор три пустые башни.
     for (int i = 0; i < towers_num; ++i) {
@@ -77,12 +77,12 @@ int main() {
     // Добавим на первую башню три кольца.
     towers[0].SetDisks(disks_num);
 
-    towers[0].ShowDisks(0);
+    /* towers[0].ShowDisks(0);
     towers[1].ShowDisks(1);
-    towers[2].ShowDisks(2);
+    towers[2].ShowDisks(2); */
     SolveHanoi(towers);
-    towers[0].ShowDisks(0);
+    /* towers[0].ShowDisks(0);
     towers[1].ShowDisks(1);
-    towers[2].ShowDisks(2);
+    towers[2].ShowDisks(2); */
 
 }
