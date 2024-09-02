@@ -1,62 +1,97 @@
-#include <algorithm>
 #include <iostream>
-#include <numeric>
 #include <vector>
-#include <random>
+#include <string>
 
 using namespace std;
 
-template <typename It>
-void PrintRange(It range_begin, It range_end) {
-    for (auto it = range_begin; it != range_end; ++it) {
-        cout << *it << " "s;
+struct Document {
+    Document() = default;
+    Document(int id, double relevance, int rating)
+        : id(id)
+        , relevance(relevance)
+        , rating(rating) {
     }
-    cout << endl;
+    int id = 0;
+    double relevance = 0.0;
+    int rating = 0;
+};
+
+
+template <typename Iterator>
+class Paginator {
+public:
+    
+    Paginator(Iterator first, Iterator last, size_t page_size) : m_page_size_(page_size), vec_pages_(MakeVec(first, last)) {
+    }
+
+    vector<pair<Iterator, Iterator>> MakeVec(Iterator begin, Iterator end) {
+        vector<pair<Iterator, Iterator>> vec;
+        Iterator iter = begin;
+        if (distance(begin, end) <= m_page_size_) {
+            for (auto it = begin; it != end + 1; ++ it) {
+                vec.push_back(make_pair(begin, end));
+            }
+            return vec;
+        } else {
+            for (auto it = begin; it != end + 1; ++it) {
+                if (it < (iter + m_page_size_)) {
+                    if (it == end) {
+                        vec.push_back(make_pair(iter, end - 1));
+                        return vec;
+                    }
+                    continue;
+                } else {
+                    vec.push_back(make_pair(iter, iter + m_page_size_ - 1));
+                    advance(iter, m_page_size_);
+                }
+            }
+            return vec;
+        }
+    }
+
+    auto begin() const {
+        return vec_pages_.begin();
+    }
+
+    auto end() const {
+        return vec_pages_.end();
+    }
+
+private:
+    size_t m_page_size_;
+    vector<pair<Iterator, Iterator>> vec_pages_;
+};
+
+template <typename Container>
+auto Paginate(const Container& c, size_t page_size) {
+    return Paginator(begin(c), end(c), page_size);
 }
 
-template <typename RandomIt>
-void MergeSort(RandomIt range_begin, RandomIt range_end) {
-    // 1. Если диапазон содержит меньше 2 элементов, выходим из функции
-    int range_length = range_end - range_begin;
-    if (range_length < 2) {
-        return;
-    }
-
-    // 2. Создаем вектор, содержащий все элементы текущего диапазона
-    vector<typename RandomIt::value_type> elements(range_begin, range_end);
-
-    // 3. Разбиваем вектор на две равные части
-    auto mid = elements.begin() + range_length / 2;
-
-    // 4. Вызываем функцию MergeSort от каждой половины вектора
-    MergeSort(elements.begin(), mid);
-    MergeSort(mid, elements.end());
-
-    // 5. С помощью алгоритма merge сливаем отсортированные половины
-    // в исходный диапазон
-    // merge -> http://ru.cppreference.com/w/cpp/algorithm/merge
-    merge(elements.begin(), mid, mid, elements.end(), range_begin);
+ostream& operator<<(ostream& output, const Document& document) {
+    return output << "{ document_id = "s << document.id << ", relevance = "s << document.relevance << ", rating = "s << document.rating << " }"s;
+}
+    
+template <typename Iterator>
+ostream& operator<<(ostream& output, const pair<Iterator, Iterator>& single_page_vec) {
+            for (auto it = single_page_vec.first; it != single_page_vec.second + 1; ++it) {
+                output << *it;
+            }        
+    return output;
 }
 
 int main() {
-    vector<int> test_vector(10);
-
-    // iota             -> http://ru.cppreference.com/w/cpp/algorithm/iota
-    // Заполняет диапазон последовательно возрастающими значениями
-    iota(test_vector.begin(), test_vector.end(), 1);
-
-    // shuffle   -> https://ru.cppreference.com/w/cpp/algorithm/random_shuffle
-    // Перемешивает элементы в случайном порядке
-    random_device rd;
-    mt19937 g(rd());
-    shuffle(test_vector.begin(), test_vector.end(), g);
-
-    // Выводим вектор до сортировки
-    PrintRange(test_vector.begin(), test_vector.end());
-
-    // Сортируем вектор с помощью сортировки слиянием
-    MergeSort(test_vector.begin(), test_vector.end());
-
-    // Выводим результат
-    PrintRange(test_vector.begin(), test_vector.end());
+    vector<Document> search_results;
+    
+    for (int i = 0; i < 8; ++i) {
+        Document doc(i, i, i);
+        search_results.push_back(doc);
+    }
+    size_t page_size = 3;
+    //cout << search_results.size() << endl;
+    const auto pages = Paginate(search_results, page_size);
+    // Выводим найденные документы по страницам
+    for (auto page = pages.begin(); page != pages.end(); ++page) {
+        cout << *page << endl;
+        cout << "Page break"s << endl;
+    }
 }

@@ -68,6 +68,63 @@ struct Document {
     int rating = 0;
 };
 
+template <typename Iterator>
+class Paginator {
+public:
+    
+    Paginator(Iterator first, Iterator last, size_t page_size) : m_page_size_(page_size), vec_pages_(MakeVec(first, last)) {
+    }
+
+    vector<pair<Iterator, Iterator>> MakeVec(Iterator begin, Iterator end) {
+        vector<pair<Iterator, Iterator>> vec;
+        Iterator iter = begin;
+        if (distance(begin, end) <= m_page_size_) {
+            for (auto it = begin; it != end + 1; ++ it) {
+                vec.push_back(make_pair(begin, end));
+            }
+            return vec;
+        } else {
+            for (auto it = begin; it != end + 1; ++it) {
+                if (it < (iter + m_page_size_)) {
+                    if (it == end) {
+                        vec.push_back(make_pair(iter, end - 1));
+                        return vec;
+                    }
+                    continue;
+                } else {
+                    vec.push_back(make_pair(iter, iter + m_page_size_ - 1));
+                    advance(iter, m_page_size_);
+                }
+            }
+            return vec;
+        }
+    }
+
+    auto begin() const {
+        return vec_pages_.begin();
+    }
+
+    auto end() const {
+        return vec_pages_.end();
+    }
+
+private:
+    size_t m_page_size_;
+    vector<pair<Iterator, Iterator>> vec_pages_;
+};
+
+ostream& operator<<(ostream& output, const Document& document) {
+    return output << "{ document_id = "s << document.id << ", relevance = "s << document.relevance << ", rating = "s << document.rating << " }"s;
+}
+    
+template <typename Iterator>
+ostream& operator<<(ostream& output, const pair<Iterator, Iterator>& single_page_vec) {
+            for (auto it = single_page_vec.first; it != single_page_vec.second + 1; ++it) {
+                output << *it;
+            }        
+    return output;
+}
+
 template <typename StringContainer>
 set<string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
     set<string> non_empty_strings;
@@ -305,73 +362,24 @@ private:
 
 // ==================== для примера =========================
 
-void PrintDocument(const Document& document) {
-    cout << "{ "s
-         << "document_id = "s << document.id << ", "s
-         << "relevance = "s << document.relevance << ", "s
-         << "rating = "s << document.rating << " }"s << endl;
+template <typename Container>
+auto Paginate(const Container& c, size_t page_size) {
+    return Paginator(begin(c), end(c), page_size);
 }
+
 int main() {
-    // инициализируем поисковую систему, передавая стоп-слова в контейнере vector
-    const vector<string> stop_words_vector = {"и"s, "в"s, "на"s, ""s, "в"s};
-    SearchServer search_server1(stop_words_vector);
-
-    // инициализируем поисковую систему передавая стоп-слова в контейнере set
-    const set<string> stop_words_set = {"и"s, "в"s, "на"s};
-    SearchServer search_server2(stop_words_set);
-
-    // инициализируем поисковую систему строкой со стоп-словами, разделёнными пробелами
-    SearchServer search_server3("  и  в на   "s);
-
-    search_server1.AddDocument(0, "белый кот и модный ошейник"s,        DocumentStatus::ACTUAL, {8, -3});
-    search_server1.AddDocument(1, "пушистый кот пушистый хвост"s,       DocumentStatus::ACTUAL, {7, 2, 7});
-    search_server1.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {5, -12, 2, 1});
-    search_server1.AddDocument(3, "ухоженный скворец евгений"s,         DocumentStatus::BANNED, {9});
-    cout << "ACTUAL by default:"s << endl;
-    for (const Document& document : search_server1.FindTopDocuments("пушистый ухоженный кот"s)) {
-        PrintDocument(document);
+    SearchServer search_server("and with"s);
+    search_server.AddDocument(1, "funny pet and nasty rat"s, DocumentStatus::ACTUAL, {7, 2, 7});
+    search_server.AddDocument(2, "funny pet with curly hair"s, DocumentStatus::ACTUAL, {1, 2, 3});
+    search_server.AddDocument(3, "big cat nasty hair"s, DocumentStatus::ACTUAL, {1, 2, 8});
+    search_server.AddDocument(4, "big dog cat Vladislav"s, DocumentStatus::ACTUAL, {1, 3, 2});
+    search_server.AddDocument(5, "big dog hamster Borya"s, DocumentStatus::ACTUAL, {1, 1, 1});
+    const auto search_results = search_server.FindTopDocuments("curly dog"s);
+    int page_size = 2;
+    const auto pages = Paginate(search_results, page_size);
+    // Выводим найденные документы по страницам
+    for (auto page = pages.begin(); page != pages.end(); ++page) {
+        cout << *page << endl;
+        cout << "Page break"s << endl;
     }
-    cout << "BANNED:"s << endl;
-    for (const Document& document : search_server1.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED)) {
-        PrintDocument(document);
-    }
-    cout << "Even ids:"s << endl;
-    for (const Document& document : search_server1.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return document_id % 2 == 0; })) {
-        PrintDocument(document);
-    }
-
-    search_server2.AddDocument(0, "белый кот и модный ошейник"s,        DocumentStatus::ACTUAL, {8, -3});
-    search_server2.AddDocument(1, "пушистый кот пушистый хвост"s,       DocumentStatus::ACTUAL, {7, 2, 7});
-    search_server2.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {5, -12, 2, 1});
-    search_server2.AddDocument(3, "ухоженный скворец евгений"s,         DocumentStatus::BANNED, {9});
-    cout << "ACTUAL by default:"s << endl;
-    for (const Document& document : search_server2.FindTopDocuments("пушистый ухоженный кот"s)) {
-        PrintDocument(document);
-    }
-    cout << "BANNED:"s << endl;
-    for (const Document& document : search_server2.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED)) {
-        PrintDocument(document);
-    }
-    cout << "Even ids:"s << endl;
-    for (const Document& document : search_server2.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return document_id % 2 == 0; })) {
-        PrintDocument(document);
-    }
-
-    search_server3.AddDocument(0, "белый кот и модный ошейник"s,        DocumentStatus::ACTUAL, {8, -3});
-    search_server3.AddDocument(1, "пушистый кот пушистый хвост"s,       DocumentStatus::ACTUAL, {7, 2, 7});
-    search_server3.AddDocument(2, "ухоженный пёс выразительные глаза"s, DocumentStatus::ACTUAL, {5, -12, 2, 1});
-    search_server3.AddDocument(3, "ухоженный скворец евгений"s,         DocumentStatus::BANNED, {9});
-    cout << "ACTUAL by default:"s << endl;
-    for (const Document& document : search_server3.FindTopDocuments("пушистый ухоженный кот"s)) {
-        PrintDocument(document);
-    }
-    cout << "BANNED:"s << endl;
-    for (const Document& document : search_server3.FindTopDocuments("пушистый ухоженный кот"s, DocumentStatus::BANNED)) {
-        PrintDocument(document);
-    }
-    cout << "Even ids:"s << endl;
-    for (const Document& document : search_server3.FindTopDocuments("пушистый ухоженный кот"s, [](int document_id, DocumentStatus status, int rating) { return document_id % 2 == 0; })) {
-        PrintDocument(document);
-    }
-    return 0;
 }
