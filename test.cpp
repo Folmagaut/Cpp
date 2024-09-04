@@ -2,6 +2,174 @@
 /////////////////////////////////////////
 #include <algorithm>
 #include <iostream>
+#include <iterator>
+#include <vector>
+#include <set>
+#include <string>
+
+using namespace std;
+
+template <typename RandomIt>
+pair<RandomIt, RandomIt> FindStartsWith(RandomIt range_begin, RandomIt range_end, string prefix) {
+    // Все строки, начинающиеся с '<prefix>', больше или равны строке "<prefix>"
+    auto left = lower_bound(range_begin, range_end, prefix);
+
+    // Составим следующий в алфавите символ.
+    // Не страшно, если prefix = 'z':
+    //в этом случае мы получим следующий за 'z' символ в таблице символов
+
+    string next_prefix = prefix;
+    next_prefix[next_prefix.size() - 1] = next_prefix[next_prefix.size() - 1] + 1;
+
+    // Строка "<next_prefix>" в рамках буквенных строк
+    // является точной верхней гранью
+    // множества строк, начнающихся с '<prefix>'
+    auto right = lower_bound(range_begin, range_end, next_prefix);
+
+    return {left, right};
+}
+
+int main() {
+    const vector<string> sorted_strings = {"moscow", "motovilikha", "murmansk"};
+    const auto mo_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), "mo");
+    for (auto it = mo_result.first; it != mo_result.second; ++it) {
+        cout << *it << " ";
+    }
+    cout << endl;
+    const auto mt_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), "mt");
+    cout << (mt_result.first - begin(sorted_strings)) << " " << (mt_result.second - begin(sorted_strings)) << endl;
+    const auto na_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), "na");
+    cout << (na_result.first - begin(sorted_strings)) << " " << (na_result.second - begin(sorted_strings)) << endl;
+    return 0;
+}
+
+/////////////////////////////////////////////
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <vector>
+#include <set>
+#include <string>
+
+using namespace std;
+
+template <typename RandomIt>
+pair<RandomIt, RandomIt> FindStartsWith(RandomIt range_begin, RandomIt range_end, char prefix) {
+    // напишите реализацию
+    if (range_begin == range_end) {
+        return make_pair(range_begin, range_end);
+    }
+    
+    auto right = range_end;
+
+    string str;
+    str.push_back(prefix);
+
+    auto left = lower_bound(range_begin, range_end, str);
+    if (left == range_end) {
+        return make_pair(right, right);
+    }
+    string str_found = *left;
+    if (str_found[0] == prefix) {
+        auto right = left;
+        for (auto it = left; it != range_end; ++it) {
+            string it_str = *(it + 1);
+            if (it_str[0] == prefix) {
+                right += 1;
+            } else {
+                return make_pair(left, right + 1);
+            }
+        }
+    } else {
+        if (left != range_end) {
+            return make_pair(left, left);
+        }
+    }
+    return make_pair(right, right);
+}
+
+int main() {
+    const vector<string> sorted_strings = {"moscow", "murmansk", "vologda"};
+    const auto m_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), 'm');
+    for (auto it = m_result.first; it != m_result.second; ++it) {
+        cout << *it << " ";
+    }
+    cout << endl;
+    const auto p_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), 'p');
+    cout << (p_result.first - begin(sorted_strings)) << " " << (p_result.second - begin(sorted_strings)) << endl;
+    const auto z_result = FindStartsWith(begin(sorted_strings), end(sorted_strings), 'z');
+    cout << (z_result.first - begin(sorted_strings)) << " " << (z_result.second - begin(sorted_strings)) << endl;
+    return 0;
+}
+
+////////////////////////////////////////////////
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <vector>
+#include <set>
+#include <string>
+
+using namespace std;
+
+set<int>::const_iterator FindNearestElement(const set<int>& numbers, int border) {
+    auto lower = numbers.lower_bound(border);
+    auto before_lower = numbers.lower_bound(border);
+    
+    if (!numbers.empty() && border > *--numbers.end()) {
+        return --numbers.end();
+    }
+    if (lower != numbers.begin()) {
+        if ((border - *--before_lower) <= (*lower - border)) {
+            return before_lower;
+        } else {
+            return lower;
+        }
+    } else {
+        return lower;
+    }
+}
+
+int main() {
+    set<int> numbers = {1, 4, 6};
+    cout <<  * FindNearestElement(numbers, 0) << " " <<  * FindNearestElement(numbers, 3) << " "
+         <<  * FindNearestElement(numbers, 5) << " " <<  * FindNearestElement(numbers, 6) << " "
+         <<  * FindNearestElement(numbers, 100) << endl;
+    set<int> empty_set;
+    cout << (FindNearestElement(empty_set, 8) == end(empty_set)) << endl;
+    return 0;
+}
+
+///////////////////////////////////////////////////////
+#include <algorithm>
+#include <iostream>
+#include <iterator>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+void PrintSpacesPositions(string& str) {
+    // напишите реализацию
+    auto it = str.begin();
+
+    while (true) {
+        it = find(it, str.end(), ' ');
+        if (it == str.end()) break;
+        cout << distance(str.begin(), it) << endl;
+        ++it;
+    }
+}
+
+int main() {
+    string str = "He said: one and one and one is three"s;
+    PrintSpacesPositions(str);
+    return 0;
+}
+
+/////////////////////////////////////////
+#include <algorithm>
+#include <iostream>
 #include <numeric>
 #include <vector>
 #include <random>
