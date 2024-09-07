@@ -1,4 +1,281 @@
 /*
+//////////////////////////////////////////////
+#include <algorithm>
+#include <iostream>
+#include <cstdint>
+#include <random>
+//#include <set>
+#include <stack>
+#include <vector>
+
+using namespace std;
+
+template <typename It>
+void PrintRange(It range_begin, It range_end) {
+    for (auto it = range_begin; it != range_end; ++it) {
+        cout << *it << " "s;
+    }
+    cout << endl;
+}
+
+template <typename Type>
+class Queue {
+public:
+
+    void SwapStacks(stack<Type>& stack1, stack<Type>& stack2) {
+        Type tp = stack1.top();
+        stack2.push(tp);
+        stack1.pop();
+        if (stack1.size() != 0) {
+            SwapStacks(stack1, stack2);
+        }
+    }
+
+    void Push(const Type& element) {
+        // напишите реализацию
+        stack1_.push(element);
+        stack<Type> medium = stack1_;
+        stack2_ = {};
+        SwapStacks(stack1_, stack2_);
+        stack1_ = medium;
+    }
+    void Pop() {
+        // напишите реализацию
+        stack2_.pop();
+        if (stack2_.empty()) {
+            stack1_ = {};
+            return;
+        }
+        stack<Type> medium = stack2_;
+        stack1_ = {};
+        SwapStacks(stack2_, stack1_);
+        stack2_ = medium;
+    }
+    Type& Front() {
+        // напишите реализацию
+        return stack2_.top();
+    }
+
+    uint64_t Size() const {
+        // напишите реализацию
+        return stack1_.size();
+    }
+    bool IsEmpty() const {
+        // напишите реализацию
+        return stack2_.empty();
+    }
+
+private:
+    stack<Type> stack1_;
+    stack<Type> stack2_;
+};
+
+int main() {
+    Queue<int> queue;
+    vector<int> values(5);
+    // заполняем вектор для тестирования очереди
+    iota(values.begin(), values.end(), 1);
+    // перемешиваем значения
+    random_device rd;
+    mt19937 g(rd());
+    shuffle(values.begin(), values.end(), g);
+    PrintRange(values.begin(), values.end());
+    cout << "Заполняем очередь"s << endl;
+    // заполняем очередь и выводим элемент в начале очереди
+    for (int i = 0; i < 5; ++i) {
+        queue.Push(values[i]);
+        cout << "Вставленный элемент "s << values[i] << endl;
+        cout << "Первый элемент очереди "s << queue.Front() << endl;
+    }
+    cout << "Вынимаем элементы из очереди"s << endl;
+    // выводим элемент в начале очереди и вытаскиваем элементы по одному
+    while (!queue.IsEmpty()) {
+        // сначала будем проверять начальный элемент, а потом вытаскивать,
+        // так как операция Front на пустой очереди не определена
+        cout << "Будем вынимать элемент "s << queue.Front() << endl;
+        queue.Pop();
+    }
+    return 0;
+}
+
+//////////////////////////////////////
+#include <algorithm>
+#include <iostream>
+#include <cstdint>
+#include <random>
+//#include <set>
+#include <vector>
+
+using namespace std;
+
+template <typename It>
+void PrintRange(It range_begin, It range_end) {
+    for (auto it = range_begin; it != range_end; ++it) {
+        cout << *it << " "s;
+    }
+    cout << endl;
+}
+
+template <typename Type>
+class Stack {
+public:
+    void Push(const Type& element) {
+        elements_.push_back(element);
+    }
+    void Pop() {
+        elements_.pop_back();
+    }
+    const Type& Peek() const {
+        return elements_.back();
+    }
+    Type& Peek() {
+        return elements_.back();
+    }
+    void Print() const {
+        PrintRange(elements_.begin(), elements_.end());
+    }
+    uint64_t Size() const {
+        return elements_.size();
+    }
+    bool IsEmpty() const {
+        return elements_.empty();
+    }
+
+private:
+    vector<Type> elements_;
+};
+
+template <typename Type>
+struct PairWithMin {
+    Type element;
+    Type minimum;
+};
+
+template <typename Type>
+ostream& operator<<(ostream& out, const PairWithMin<Type>& pair_to_print) {
+    out << pair_to_print.element;
+    return out;
+}
+
+template <typename Type>
+class StackMin {
+public:
+    void Push(const Type& new_element) {
+        PairWithMin<Type> new_pair = {new_element, new_element};
+        if (!elements_.IsEmpty() && new_pair.minimum > elements_.Peek().minimum) {
+            new_pair.minimum = elements_.Peek().minimum;
+        }
+        elements_.Push(new_pair);
+    }
+    void Pop() {
+        elements_.Pop();
+    }
+    const Type& Peek() const {
+        return elements_.Peek().element;
+    }
+    Type& Peek() {
+        return elements_.Peek().element;
+    }
+    void Print() const {
+        elements_.Print();
+    }
+    uint64_t Size() const {
+        return elements_.size();
+    }
+    bool IsEmpty() const {
+        return elements_.IsEmpty();
+    }
+    const Type& PeekMin() const {
+        return elements_.Peek().minimum;
+    }
+    Type& PeekMin() {
+        return elements_.Peek().minimum;
+    }
+
+private:
+    Stack<PairWithMin<Type>> elements_;
+};
+
+template <typename Type>
+class SortedSack {
+public:
+    void Push(const Type& element) {
+    // напишите реализацию метода
+    
+        if (elements_.IsEmpty()) {
+            elements_.Push(element);
+        } else {
+            if (element > elements_.Peek()) {
+                is_pushed_ = false;
+                SwapPeekAndElement(element);
+            } else {
+                elements_.Push(element);
+            }
+        }
+    }
+
+    void SwapPeekAndElement(const Type& element) {
+
+        Type out_element = elements_.Peek();
+        elements_.Pop();
+        if (elements_.IsEmpty()) {
+            elements_.Push(element);
+            is_pushed_ = true;
+            elements_.Push(out_element);
+            return;
+        }
+        if (element > elements_.Peek()) {
+            SwapPeekAndElement(element);
+        }
+        if (!is_pushed_) {
+            elements_.Push(element);
+            is_pushed_ = true;
+        }
+        elements_.Push(out_element);        
+    }
+
+    void Pop() {
+    // напишите реализацию метода
+        elements_.Pop();
+    }
+    const Type& Peek() const {
+        return elements_.Peek();
+    }
+    Type& Peek() {
+        return elements_.Peek();
+    }
+    void Print() const {
+        elements_.Print();
+    }
+    uint64_t Size() const {
+        return elements_.Size();
+    }
+    bool IsEmpty() const {
+        return elements_.IsEmpty();
+    }
+private:
+    Stack<Type> elements_;
+    bool is_pushed_;
+};
+
+int main() {
+    SortedSack<int> sack;
+    vector<int> values(5);
+    // заполняем вектор для тестирования нашего класса
+    iota(values.begin(), values.end(), 1);
+    // перемешиваем значения
+    random_device rd;
+    mt19937 g(rd());
+    shuffle(values.begin(), values.end(), g);
+
+    // заполняем класс и проверяем, что сортировка сохраняется после каждой вставки
+    for (int i = 0; i < 5; ++i) {
+        cout << "Вставляемый элемент = "s << values[i] << endl;
+        sack.Push(values[i]);
+        sack.Print();
+    }
+}
+
 /////////////////////////////////////////
 #include <algorithm>
 #include <iostream>
