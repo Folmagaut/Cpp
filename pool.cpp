@@ -367,70 +367,22 @@ public:
     }
 
     template <typename DocumentPredicate>
-    void AddFindRequest(const string& raw_query, DocumentPredicate document_predicate) {
+    vector<Document> AddFindRequest(const string& raw_query, DocumentPredicate document_predicate) {
         vector<Document> search_results = search_server_.FindTopDocuments(raw_query, document_predicate);
-        QueryResult result;
-        ++current_time_;
-        if (search_results.size() == 0) {
-            result.is_empty = true;
-            result.query_time = current_time_ % min_in_day_;
-            ++no_result_counter_;
-        } else {
-            result.is_empty = false;
-            result.query_time = current_time_ % min_in_day_;
-        }
-        requests_.push_back(result);
-        if (requests_.size() - 1 == min_in_day_) {
-            QueryResult front_result = *requests_.begin();
-            if (front_result.is_empty) {
-                --no_result_counter_;
-            }
-            requests_.pop_front();
-        }
+        AddRequest(search_results);
+        return search_results;
     }
 
-    void AddFindRequest(const string& raw_query, DocumentStatus status) {
+    vector<Document> AddFindRequest(const string& raw_query, DocumentStatus status) {
         vector<Document> search_results = search_server_.FindTopDocuments(raw_query, status);
-        QueryResult result;
-        ++current_time_;
-        if (search_results.size() == 0) {
-            result.is_empty = true;
-            result.query_time = current_time_ % min_in_day_;
-            ++no_result_counter_;
-        } else {
-            result.is_empty = false;
-            result.query_time = current_time_ % min_in_day_;
-        }
-        requests_.push_back(result);
-        if (requests_.size() - 1 == min_in_day_) {
-            QueryResult front_result = *requests_.begin();
-            if (front_result.is_empty) {
-                --no_result_counter_;
-            }
-            requests_.pop_front();
-        }
+        AddRequest(search_results);
+        return search_results;
     }
 
-    void AddFindRequest(const string& raw_query) {
+    vector<Document> AddFindRequest(const string& raw_query) {
         vector<Document> search_results = search_server_.FindTopDocuments(raw_query);
-        QueryResult result;
-        ++current_time_;
-        if (search_results.size() == 0) {
-            result.is_empty = true;
-            result.query_time = current_time_ % min_in_day_;
-            ++no_result_counter_;
-        } else {
-            result.is_empty = false;
-            result.query_time = current_time_ % min_in_day_;
-        }
-        requests_.push_back(result);
-        if (requests_.size() - 1 == min_in_day_) {
-            QueryResult front_result = *requests_.begin();
-            if (front_result.is_empty) {
-                --no_result_counter_;
-            }
-            requests_.pop_front();
-        }
+        AddRequest(search_results);
+        return search_results;
     }
 
     int GetNoResultRequests() const {
@@ -447,6 +399,27 @@ private:
     int no_result_counter_;
     int current_time_;
     const SearchServer& search_server_;
+
+    void AddRequest(vector<Document>& search_results) {
+        QueryResult result;
+        ++current_time_;
+        if (search_results.size() == 0) {
+            result.is_empty = true;
+            result.query_time = current_time_ % min_in_day_;
+            ++no_result_counter_;
+        } else {
+            result.is_empty = false;
+            result.query_time = current_time_ % min_in_day_;
+        }
+        requests_.push_back(result);
+        if (requests_.size() - 1 == min_in_day_) {
+            QueryResult front_result = *requests_.begin();
+            if (front_result.is_empty) {
+                --no_result_counter_;
+            }
+            requests_.pop_front();
+        }
+    }
 };
 
 // ==================== для примера =========================
