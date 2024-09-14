@@ -1,87 +1,61 @@
 #include "log_duration.h"
 
-#include <algorithm>
-#include <chrono>
-#include <cstdlib>
 #include <iostream>
+#include <numeric>
+#include <random>
+#include <string>
 #include <vector>
 
 using namespace std;
 
-vector<int> ReverseVector(const vector<int>& source_vector) {
-    vector<int> res;
+vector<float> ComputeAvgTemp(const vector<vector<float>>& measures) {
+    // место для вашего решения
+    if (measures.empty()) {
+        return {};
+    }
+    //const int num_days = measures.size();
+    //const int measures_per_day = measures[0].size();
+    vector<float> avg_vec(measures.size());
+    vector<int> positive_temp_counter(measures.size());
+    for (auto vec_of_floats : measures) {
+        for (size_t i = 0; i < vec_of_floats.size(); ++i) {
+            avg_vec[i] += (vec_of_floats[i] > 0 ? (vec_of_floats[i]) : 0);
+            positive_temp_counter[i] += (vec_of_floats[i] > 0 ? 1 : 0);
+        }
+    }
 
-    for (int i : source_vector) {
-        res.insert(res.begin(), i);
+    for (size_t i = 0; i < measures[0].size(); ++i) {
+        float div = (positive_temp_counter[i] != 0 ? 1.f/positive_temp_counter[i] : 0);
+        avg_vec[i] *= div;
+    }
+    return avg_vec;
+}
+
+vector<float> GetRandomVector(int size) {
+    static mt19937 engine;
+    uniform_real_distribution<float> d(-100, 100);
+
+    vector<float> res(size);
+    for (int i = 0; i < size; ++i) {
+        res[i] = d(engine);
     }
 
     return res;
-}
-
-vector<int> ReverseVector2(const vector<int>& source_vector) {
-    vector<int> res;
-
-    // будем проходить source_vector задом наперёд
-    // с помощью обратного итератора
-    for (auto iterator = source_vector.rbegin(); iterator != source_vector.rend(); ++iterator) {
-        res.push_back(*iterator);
-    }
-
-    return res;
-}
-
-vector<int> ReverseVector3(const vector<int>& source_vector) {
-    return {source_vector.rbegin(), source_vector.rend()};
-}
-
-vector<int> ReverseVector4(const vector<int>& source_vector) {
-    vector<int> res(source_vector.size());
-    int sz = static_cast<int>(source_vector.size());
-    for (int i = 0; i < sz; ++i) {
-        res[sz - i - 1] = source_vector[i];
-    }
-    // реализация вашего собственного реверсирования
-
-    return res;
-}
-
-void Operate() {
-    vector<int> rand_vector;
-    int n;
-
-    cin >> n;
-    rand_vector.reserve(n);
-
-    for (int i = 0; i < n; ++i) {
-        rand_vector.push_back(rand());
-    }
-    if (n <= 100000) {
-        {
-        LOG_DURATION("Naive"s);
-        ReverseVector(rand_vector);
-        }
-        {
-        LOG_DURATION("Good"s);
-        ReverseVector2(rand_vector);
-        }
-    } else if (n > 100000) {
-        {
-        LOG_DURATION("Good"s);
-        ReverseVector2(rand_vector);
-        }
-        {
-        LOG_DURATION("Best"s);
-        ReverseVector3(rand_vector);
-        }
-        {
-        LOG_DURATION("Your"s);
-        ReverseVector4(rand_vector);
-        }
-    }
-    // код измерения тут
 }
 
 int main() {
-    Operate();
-    return 0;
+    vector<vector<float>> data;
+    data.reserve(5000);
+
+    for (int i = 0; i < 5000; ++i) {
+        data.push_back(GetRandomVector(5000));
+    }
+
+    vector<float> avg;
+    {
+        LOG_DURATION("ComputeAvgTemp"s);
+        avg = ComputeAvgTemp(data);
+    }
+
+    cout << "Total mean: "s << accumulate(avg.begin(), avg.end(), 0.f) / avg.size() << endl;
 }
