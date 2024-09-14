@@ -1,4 +1,6 @@
 #include "log_duration.h"
+
+#include <algorithm>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
@@ -8,6 +10,7 @@ using namespace std;
 
 vector<int> ReverseVector(const vector<int>& source_vector) {
     vector<int> res;
+
     for (int i : source_vector) {
         res.insert(res.begin(), i);
     }
@@ -15,61 +18,70 @@ vector<int> ReverseVector(const vector<int>& source_vector) {
     return res;
 }
 
-int CountPops(const vector<int>& source_vector, int begin, int end) {
-    int res = 0;
+vector<int> ReverseVector2(const vector<int>& source_vector) {
+    vector<int> res;
 
-    for (int i = begin; i < end; ++i) {
-        if (source_vector[i]) {
-            ++res;
-        }
+    // будем проходить source_vector задом наперёд
+    // с помощью обратного итератора
+    for (auto iterator = source_vector.rbegin(); iterator != source_vector.rend(); ++iterator) {
+        res.push_back(*iterator);
     }
 
     return res;
 }
 
-void AppendRandom(vector<int>& v, int n) {
-    for (int i = 0; i < n; ++i) {
-        // получаем случайное число с помощью функции rand.
-        // с помощью (rand() % 2) получим целое число в диапазоне 0..1.
-        // в C++ имеются более современные генераторы случайных чисел,
-        // но в данном уроке не будем их касаться
-        v.push_back(rand() % 2);
+vector<int> ReverseVector3(const vector<int>& source_vector) {
+    return {source_vector.rbegin(), source_vector.rend()};
+}
+
+vector<int> ReverseVector4(const vector<int>& source_vector) {
+    vector<int> res(source_vector.size());
+    int sz = static_cast<int>(source_vector.size());
+    for (int i = 0; i < sz; ++i) {
+        res[sz - i - 1] = source_vector[i];
     }
+    // реализация вашего собственного реверсирования
+
+    return res;
 }
 
 void Operate() {
-    {
-    LogDuration guard("Total"s);
+    vector<int> rand_vector;
+    int n;
 
-    vector<int> random_bits;
+    cin >> n;
+    rand_vector.reserve(n);
 
-    // операция << для целых чисел это сдвиг всех бит в двоичной
-    // записи числа. Запишем с её помощью число 2 в степени 17 (131072)
-    static const int N = 1 << 17;
-
-    // заполним вектор случайными числами 0 и 1
-    {
-    LogDuration guard("Append random"s);
-    AppendRandom(random_bits, N);
+    for (int i = 0; i < n; ++i) {
+        rand_vector.push_back(rand());
     }
-
-    // перевернём вектор задом наперёд
-    vector<int> reversed_bits;
-    {
-    LogDuration guard("Reverse"s);
-    reversed_bits = ReverseVector(random_bits);
+    if (n <= 100000) {
+        {
+        LOG_DURATION("Naive"s);
+        ReverseVector(rand_vector);
+        }
+        {
+        LOG_DURATION("Good"s);
+        ReverseVector2(rand_vector);
+        }
+    } else if (n > 100000) {
+        {
+        LOG_DURATION("Good"s);
+        ReverseVector2(rand_vector);
+        }
+        {
+        LOG_DURATION("Best"s);
+        ReverseVector3(rand_vector);
+        }
+        {
+        LOG_DURATION("Your"s);
+        ReverseVector4(rand_vector);
+        }
     }
-    // посчитаем процент единиц на начальных отрезках вектора
-    {
-    LogDuration guard("Counting"s);
-    for (int i = 1, step = 1; i <= N; i += step, step *= 2) {
-        double rate = CountPops(reversed_bits, 0, i) * 100. / i;
-        cout << "After "s << i << " bits we found "s << rate << "% pops"s << endl;
-    }
-    }
-    }
+    // код измерения тут
 }
 
 int main() {
     Operate();
+    return 0;
 }
