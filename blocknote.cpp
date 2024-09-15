@@ -1,38 +1,38 @@
-#include <chrono>
 #include <iostream>
-#include <thread>
+#include <string>
+
+#include "log_duration.h"
 
 using namespace std;
-using namespace chrono;
-using namespace literals;
 
-class LogDuration {
-public:
-    LogDuration() {
+// main с аргументами означает, что программа принимает аргументы командной строки,
+// при запуске из консоли их количество будет сохранено в переменную argc,
+// а значения — в argv.
+// Тип const char** будет обсуждаться позже в курсе, работать с ним можно
+// отчасти как с вектором: argv[0] — нулевой аргумент, argv[1] — первый. 
+// argv[i] можно конвертировать в string
+int main(int argc, const char** argv) {
+    // Нулевой аргумент — это всегда имя программы,
+    // поэтому нам нужен первый
+    int arg = stoi(argv[1]);
+
+    if (arg == 1) {
+        LOG_DURATION("endl"s);
+        int i;
+        while (cin >> i) {
+            cout << i * i << endl;
+        }
     }
 
-    ~LogDuration() {
-        // эта переменная сохранит время уничтожения объекта:
-        const auto end_time = steady_clock::now();
-        const auto dur = end_time - start_time_;
-        cerr << duration_cast<milliseconds>(dur).count() << " ms"s << endl;
+    if (arg == 2) {
+        // Чтобы "\n" воспринималось не как перевод строки, а как 
+        // слэш и буква 'n', добавим перед ним ещё один слеш:
+        // два слеша в строковом (и символьном) литерале воспринимаются
+        // как один (\) 
+        LOG_DURATION("\\n"s);
+        int i;
+        while (cin >> i) {
+            cout << i * i << "\n"s;
+        }
     }
-
-private:
-    // Переменная будет инициализирована текущим моментом времени при
-    // создании объекта класса.
-    // Таким образом, она хранит время создания объекта.
-    const steady_clock::time_point start_time_ = steady_clock::now();
-};
-
-int main() {
-    cout << "Ожидание 5s..."s << endl;
-
-    {
-        LogDuration sleep_guard;
-        // операция - ожидание 5 секунд
-        this_thread::sleep_for(5s);
-    }
-
-    cout << "Ожидание завершено"s << endl;
 }
