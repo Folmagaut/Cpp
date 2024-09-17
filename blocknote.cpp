@@ -1,38 +1,35 @@
+#include <array>
+#include <fstream>
 #include <iostream>
 #include <string>
 
-#include "log_duration.h"
-
 using namespace std;
 
-// main с аргументами означает, что программа принимает аргументы командной строки,
-// при запуске из консоли их количество будет сохранено в переменную argc,
-// а значения — в argv.
-// Тип const char** будет обсуждаться позже в курсе, работать с ним можно
-// отчасти как с вектором: argv[0] — нулевой аргумент, argv[1] — первый. 
-// argv[i] можно конвертировать в string
 int main(int argc, const char** argv) {
-    // Нулевой аргумент — это всегда имя программы,
-    // поэтому нам нужен первый
-    int arg = stoi(argv[1]);
-
-    if (arg == 1) {
-        LOG_DURATION("endl"s);
-        int i;
-        while (cin >> i) {
-            cout << i * i << endl;
-        }
+    // при неверных аргументах выводим ошибку и выходим с кодом
+    if (argc != 3) {
+        cerr << "Usage: "s << argv[0] << " <in file> <out file>"s << endl;
+        return 1;
     }
 
-    if (arg == 2) {
-        // Чтобы "\n" воспринималось не как перевод строки, а как 
-        // слэш и буква 'n', добавим перед ним ещё один слеш:
-        // два слеша в строковом (и символьном) литерале воспринимаются
-        // как один (\) 
-        LOG_DURATION("\\n"s);
-        int i;
-        while (cin >> i) {
-            cout << i * i << "\n"s;
-        }
+    ifstream in_file(argv[1], ios::in | ios::binary);
+    if (!in_file) {
+        cerr << "Can't open input file"s << endl;
+        return 2;
     }
+
+    ofstream out_file(argv[2], ios::out | ios::binary);
+    if (!out_file) {
+        cerr << "Can't open output file"s << endl;
+        return 2;
+    }
+
+    // размер буфера один килобайт
+    static const int BUFF_SIZE = 1024;
+    std::array<char, BUFF_SIZE> buffer;
+
+    do {
+        in_file.read(buffer.data(), BUFF_SIZE);
+        out_file.write(buffer.data(), in_file.gcount());
+    } while (in_file);
 }

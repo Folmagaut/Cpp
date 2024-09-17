@@ -1,4 +1,139 @@
 /*
+
+
+
+////////////////////////////////////////////
+#include <cassert>
+#include <fstream>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+size_t GetFileSize(const string& file) {
+    ifstream stream(file, ios::binary | ios::ate);
+    if (!stream) {
+        return string::npos;
+    }
+    size_t size = stream.tellg();
+    stream.close();
+    return size;
+}
+
+int main() {
+    ofstream("test.txt") << "123456789"s;
+    assert(GetFileSize("test.txt"s) == 9);
+
+    ofstream test2("test2.txt"s);
+    test2.seekp(1000);
+    test2 << "abc"s;
+    test2.flush();
+
+    assert(GetFileSize("test2.txt"s) == 1003);
+    assert(GetFileSize("missing file name"s) == string::npos);
+}
+
+
+//////////////////////////////////////////
+#include <fstream>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main(int argc, const char** argv) {
+    // 1
+    {
+        fstream fout("telefon.txt", ios::out);
+        fout << "У меня зазвонил телефон."s << endl;
+        fout << "- Кто говорит?"s << endl;
+    }
+
+    // 2
+    {
+        fstream fout("telefon.txt", ios::in | ios::out);
+        fout.seekp(-17, ios::end);
+        fout << "на линии?"s << endl << "- Слон."s << endl;
+        cout << "Writing at pos: "s << fout.tellp() << endl;
+    }
+
+    // 3
+    {
+        fstream fin("telefon.txt", ios::in);
+        string str;
+        while (getline(fin, str)) {
+            cout << str << endl;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////
+#include <cassert>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <string_view>
+
+using namespace std;
+
+string GetLine(istream& in) {
+    string s;
+    getline(in, s);
+    return s;
+}
+
+void CreateFiles(const string& config_file) {
+    ifstream input_file(config_file);
+    ofstream output_file;
+    string line;
+
+    while (getline(input_file, line)) {
+        if (line[0] != '>') {
+            output_file.close();
+            output_file.open(line);
+            continue;
+        }
+        output_file << line.substr(1) << endl;
+    }
+}
+
+int main() {
+    ofstream("test_config.txt"s) << "a.txt\n"
+                                    ">10\n"
+                                    ">abc\n"
+                                    "b.txt\n"
+                                    ">123"s;
+
+    CreateFiles("test_config.txt"s);
+    ifstream in_a("a.txt"s);
+    assert(GetLine(in_a) == "10"s && GetLine(in_a) == "abc"s);
+
+    ifstream in_b("b.txt"s);
+    assert(GetLine(in_b) == "123"s);
+}
+
+//////////////////////////////////////////////////////////////
+#include <fstream>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main() {
+    {
+        ifstream in_file("results.txt"s);
+        int x; 
+        if (in_file >> x) {
+            cout << "Из файла прочитано число "s << x << endl;
+        }
+    }
+
+    {
+        ofstream out_file("results.txt"s);
+        out_file << 100 << 500 << endl;
+    }
+}
+
 /////////////////////////////////////////
 #include <chrono>
 #include <iostream>
