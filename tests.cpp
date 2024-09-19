@@ -14,22 +14,7 @@ path operator""_p(const char* data, std::size_t sz) {
     return path(data, data + sz);
 }
 
-struct PathInfo {
-    bool isDirectory;
-    std::string name;
-};
-
-bool comparePathInfos(const PathInfo& lhs, const PathInfo& rhs) {
-    // Используем функцию сравнения строковых значений, но только если они оба являются файлами
-    if (!lhs.isDirectory && !rhs.isDirectory) {
-        return lhs.name > rhs.name;
-    }
-    // В противном случае сортируем по типу (папка всегда выше файла)
-    return lhs.isDirectory || rhs.isDirectory ? lhs.isDirectory : false;
-}
-
 void PrintTree(ostream& dst, const path& p, int offset) {
-    //dst << p.string() << endl;
     error_code err;
     auto status = filesystem::status(p, err);
     offset += 2;
