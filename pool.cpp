@@ -1,452 +1,433 @@
-#include <algorithm>
-#include <cmath>
-#include <deque>
-#include <iostream>
-#include <map>
-#include <set>
+#include <cassert>
+#include <cstddef>
+#include <iterator>
 #include <string>
 #include <utility>
-#include <vector>
 
-using namespace std;
-
-const int MAX_RESULT_DOCUMENT_COUNT = 5;
-const double EPSILON = 1e-6;
-
-string ReadLine() {
-    string s;
-    getline(cin, s);
-    return s;
-}
-
-int ReadLineWithNumber() {
-    int result;
-    cin >> result;
-    ReadLine();
-    return result;
-}
-
-    bool IsValidWord(const string& word) {
-        return none_of(word.begin(), word.end(), [](char c) {
-            return c >= '\0' && c < ' ';
-        });
-    }
-
-vector<string> SplitIntoWords(const string& text) {
-    vector<string> words;
-    string word;
-    for (const char c : text) {
-        if (c == ' ') {
-            if (!word.empty()) {
-                if (!IsValidWord(word)) {
-                    throw invalid_argument("Invalid_argument");
-                }
-                words.push_back(word);
-                word.clear();
-            }
-        } else {
-            word += c;
-        }
-    }
-    if (!word.empty()) {
-        if (!IsValidWord(word)) {
-            throw invalid_argument("Invalid_argument");
-        }
-        words.push_back(word);
-    }
-    return words;
-}
-
-struct Document {
-    Document() = default;
-    Document(int id, double relevance, int rating)
-        : id(id)
-        , relevance(relevance)
-        , rating(rating) {
-    }
-    int id = 0;
-    double relevance = 0.0;
-    int rating = 0;
-};
-
-template <typename Iterator>
-class Paginator {
-public:
+template <typename Type>
+class SingleLinkedList {
     
-    Paginator(Iterator first, Iterator last, size_t page_size) : m_page_size_(page_size), vec_pages_(MakeVec(first, last)) {
-    }
-
-    vector<pair<Iterator, Iterator>> MakeVec(Iterator begin, Iterator end) {
-        vector<pair<Iterator, Iterator>> vec;
-        Iterator iter = begin;
-        if (distance(begin, end) <= m_page_size_) {
-            for (auto it = begin; it != end + 1; ++ it) {
-                vec.push_back(make_pair(begin, end));
-            }
-            return vec;
-        } else {
-            for (auto it = begin; it != end + 1; ++it) {
-                if (it < (iter + m_page_size_)) {
-                    if (it == end) {
-                        vec.push_back(make_pair(iter, end - 1));
-                        return vec;
-                    }
-                    continue;
-                } else {
-                    vec.push_back(make_pair(iter, iter + m_page_size_ - 1));
-                    advance(iter, m_page_size_);
-                }
-            }
-            return vec;
+    // Узел списка
+    struct Node {
+        Node() = default;
+        Node(const Type& val, Node* next)
+            : value(val)
+            , next_node(next) {
         }
+        Type value;
+        Node* next_node = nullptr;
+    };
+
+    // Шаблон класса «Базовый Итератор».
+    // Определяет поведение итератора на элементы односвязного списка
+    // ValueType — совпадает с Type (для Iterator) либо с const Type (для ConstIterator)
+    template <typename ValueType>
+    class BasicIterator {
+        // Класс списка объявляется дружественным, чтобы из методов списка
+        // был доступ к приватной области итератора
+        friend class SingleLinkedList;
+
+        // Конвертирующий конструктор итератора из указателя на узел списка
+        explicit BasicIterator(Node* node) : node_(node) {
+        }
+
+    public:
+        // Объявленные ниже типы сообщают стандартной библиотеке о свойствах этого итератора
+
+        // Категория итератора — forward iterator
+        // (итератор, который поддерживает операции инкремента и многократное разыменование)
+        using iterator_category = std::forward_iterator_tag;
+        // Тип элементов, по которым перемещается итератор
+        using value_type = Type;
+        // Тип, используемый для хранения смещения между итераторами
+        using difference_type = std::ptrdiff_t;
+        // Тип указателя на итерируемое значение
+        using pointer = ValueType*;
+        // Тип ссылки на итерируемое значение
+        using reference = ValueType&;
+
+        BasicIterator() = default;
+
+        // Конвертирующий конструктор/конструктор копирования
+        // При ValueType, совпадающем с Type, играет роль копирующего конструктора
+        // При ValueType, совпадающем с const Type, играет роль конвертирующего конструктора
+        BasicIterator(const BasicIterator<Type>& other) noexcept : node_(other.node_) {
+        }
+
+        // Чтобы компилятор не выдавал предупреждение об отсутствии оператора = при наличии
+        // пользовательского конструктора копирования, явно объявим оператор = и
+        // попросим компилятор сгенерировать его за нас
+        BasicIterator& operator=(const BasicIterator& rhs) = default;
+
+        // Оператор сравнения итераторов (в роли второго аргумента выступает константный итератор)
+        // Два итератора равны, если они ссылаются на один и тот же элемент списка либо на end()
+        [[nodiscard]] bool operator==(const BasicIterator<const Type>& rhs) const noexcept {
+            return node_ == rhs.node_;
+        }
+
+        // Оператор проверки итераторов на неравенство
+        // Противоположен !=
+        [[nodiscard]] bool operator!=(const BasicIterator<const Type>& rhs) const noexcept {
+            return node_ != rhs.node_;
+        }
+
+        // Оператор сравнения итераторов (в роли второго аргумента итератор)
+        // Два итератора равны, если они ссылаются на один и тот же элемент списка либо на end()
+        [[nodiscard]] bool operator==(const BasicIterator<Type>& rhs) const noexcept {
+            return node_ == rhs.node_;
+        }
+
+        // Оператор проверки итераторов на неравенство
+        // Противоположен !=
+        [[nodiscard]] bool operator!=(const BasicIterator<Type>& rhs) const noexcept {
+            return node_ != rhs.node_;
+        }
+
+        // Оператор прединкремента. После его вызова итератор указывает на следующий элемент списка
+        // Возвращает ссылку на самого себя
+        // Инкремент итератора, не указывающего на существующий элемент списка, приводит к неопределённому поведению
+        BasicIterator& operator++() noexcept {
+            node_ = node_->next_node;
+            return *this;
+        }
+
+        // Оператор постинкремента. После его вызова итератор указывает на следующий элемент списка
+        // Возвращает прежнее значение итератора
+        // Инкремент итератора, не указывающего на существующий элемент списка,
+        // приводит к неопределённому поведению
+        BasicIterator operator++(int) noexcept {
+            auto old_value(*this); // Сохраняем прежнее значение объекта для последующего возврата
+            ++(*this); // используем логику префиксной формы инкремента
+            return old_value;
+        }
+
+        // Операция разыменования. Возвращает ссылку на текущий элемент
+        // Вызов этого оператора у итератора, не указывающего на существующий элемент списка,
+        // приводит к неопределённому поведению
+        [[nodiscard]] reference operator*() const noexcept {
+            return node_->value;
+        }
+
+        // Операция доступа к члену класса. Возвращает указатель на текущий элемент списка
+        // Вызов этого оператора у итератора, не указывающего на существующий элемент списка,
+        // приводит к неопределённому поведению
+        [[nodiscard]] pointer operator->() const noexcept {
+            return &node_->value;
+        }
+
+    private:
+        Node* node_ = nullptr;
+    };
+public:
+
+    using value_type = Type;
+    using reference = value_type&;
+    using const_reference = const value_type&;
+
+    // Итератор, допускающий изменение элементов списка
+    using Iterator = BasicIterator<Type>;
+    // Константный итератор, предоставляющий доступ для чтения к элементам списка
+    using ConstIterator = BasicIterator<const Type>;
+
+    // Возвращает итератор, ссылающийся на первый элемент
+    // Если список пустой, возвращённый итератор будет равен end()
+    [[nodiscard]] Iterator begin() noexcept {
+        return Iterator(head_.next_node);
     }
 
-    auto begin() const {
-        return vec_pages_.begin();
+    // Возвращает итератор, указывающий на позицию, следующую за последним элементом односвязного списка
+    // Разыменовывать этот итератор нельзя — попытка разыменования приведёт к неопределённому поведению
+    [[nodiscard]] Iterator end() noexcept {
+        return Iterator(nullptr);
     }
 
-    auto end() const {
-        return vec_pages_.end();
+    // Возвращает константный итератор, ссылающийся на первый элемент
+    // Если список пустой, возвращённый итератор будет равен end()
+    // Результат вызова эквивалентен вызову метода cbegin()
+    [[nodiscard]] ConstIterator begin() const noexcept {
+        return Iterator(head_.next_node);
+    }
+
+    // Возвращает константный итератор, указывающий на позицию, следующую за последним элементом односвязного списка
+    // Разыменовывать этот итератор нельзя — попытка разыменования приведёт к неопределённому поведению
+    // Результат вызова эквивалентен вызову метода cend()
+    [[nodiscard]] ConstIterator end() const noexcept {
+        return Iterator(nullptr);
+    }
+
+    // Возвращает константный итератор, ссылающийся на первый элемент
+    // Если список пустой, возвращённый итератор будет равен cend()
+    [[nodiscard]] ConstIterator cbegin() const noexcept {
+        return Iterator(head_.next_node);
+    }
+
+    // Возвращает константный итератор, указывающий на позицию, следующую за последним элементом односвязного списка
+    // Разыменовывать этот итератор нельзя — попытка разыменования приведёт к неопределённому поведению
+    [[nodiscard]] ConstIterator cend() const noexcept {
+        return Iterator(nullptr);
+    }
+
+    SingleLinkedList() : size_(0) {
+    }
+
+    ~SingleLinkedList() {
+        Clear();
+    }
+
+    // Вставляет элемент value в начало списка за время O(1)
+    void PushFront(const Type& value) {
+        head_.next_node = new Node(value, head_.next_node);
+        ++size_;
+    }
+
+    // Очищает список за время O(N)
+    void Clear() noexcept {
+        auto current_first_node = head_.next_node;
+        while (current_first_node != nullptr) {
+            auto next_node = current_first_node->next_node;
+            delete current_first_node;
+            current_first_node = next_node;
+        }
+        head_.next_node = nullptr;
+        size_ = 0;
+    }
+
+    // Возвращает количество элементов в списке
+    size_t GetSize() const noexcept {
+        return size_;
+    }
+
+    // Сообщает, пустой ли список
+    bool IsEmpty() const noexcept {
+        return (size_ == 0);
     }
 
 private:
-    size_t m_page_size_;
-    vector<pair<Iterator, Iterator>> vec_pages_;
+    // Фиктивный узел, используется для вставки "перед первым элементом"
+    Node head_;
+    size_t size_;
 };
 
-ostream& operator<<(ostream& output, const Document& document) {
-    return output << "{ document_id = "s << document.id << ", relevance = "s << document.relevance << ", rating = "s << document.rating << " }"s;
-}
-    
-template <typename Iterator>
-ostream& operator<<(ostream& output, const pair<Iterator, Iterator>& single_page_vec) {
-            for (auto it = single_page_vec.first; it != single_page_vec.second + 1; ++it) {
-                output << *it;
-            }        
-    return output;
-}
-
-template <typename StringContainer>
-set<string> MakeUniqueNonEmptyStrings(const StringContainer& strings) {
-    set<string> non_empty_strings;
-    for (const string& str : strings) {
-        if (!str.empty()) {
-            non_empty_strings.insert(str);
+// Эта функция тестирует работу SingleLinkedList
+void Test1() {
+    // Шпион, следящий за своим удалением
+    struct DeletionSpy {
+        DeletionSpy() = default;
+        explicit DeletionSpy(int& instance_counter) noexcept
+            : instance_counter_ptr_(&instance_counter)  //
+        {
+            OnAddInstance();
         }
-    }
-    return non_empty_strings;
-}
-
-enum class DocumentStatus {
-    ACTUAL,
-    IRRELEVANT,
-    BANNED,
-    REMOVED,
-};
-
-class SearchServer {
-public:
-
-    template <typename StringContainer>
-    explicit SearchServer(const StringContainer& stop_words) : stop_words_(MakeUniqueNonEmptyStrings(stop_words)) {
-        if (!all_of(stop_words.begin(), stop_words.end(), IsValidWord)) {
-            throw invalid_argument("Invalid_argument");
+        DeletionSpy(const DeletionSpy& other) noexcept
+            : instance_counter_ptr_(other.instance_counter_ptr_)  //
+        {
+            OnAddInstance();
         }
-    }
-
-    explicit SearchServer(const string& stop_words_text) : SearchServer(SplitIntoWords(stop_words_text)) {
-    }
-
-    void AddDocument(int document_id, const string& document, DocumentStatus status, const vector<int>& ratings) {
-   
-        if (document_id < 0) {
-            throw invalid_argument("Invalid_argument");
+        DeletionSpy& operator=(const DeletionSpy& rhs) noexcept {
+            if (this != &rhs) {
+                auto rhs_copy(rhs);
+                std::swap(instance_counter_ptr_, rhs_copy.instance_counter_ptr_);
+            }
+            return *this;
         }
-        if (docs_id_in_a_row_.size() != 0) {
-            if (count(docs_id_in_a_row_.begin(), docs_id_in_a_row_.end(), document_id)) {
-                throw invalid_argument("Invalid_argument");
+        ~DeletionSpy() {
+            OnDeleteInstance();
+        }
+
+    private:
+        void OnAddInstance() noexcept {
+            if (instance_counter_ptr_) {
+                ++(*instance_counter_ptr_);
             }
         }
-        const vector<string> words = SplitIntoWordsNoStop(document);
-
-        const double inv_word_count = 1.0 / words.size();
-        for (const string& word : words) {
-            word_to_document_freqs_[word][document_id] += inv_word_count;
-        }
-        documents_.emplace(document_id, DocumentData{ComputeAverageRating(ratings), status});
-        docs_id_in_a_row_.push_back(document_id);
-    }
-
-    template <typename DocumentPredicate>
-    vector<Document> FindTopDocuments(const string& raw_query, DocumentPredicate document_predicate) const {
-        const Query query = ParseQuery(raw_query);
-
-        auto matched_documents = FindAllDocuments(query, document_predicate);
-        sort(matched_documents.begin(), matched_documents.end(),
-             [](const Document& lhs, const Document& rhs) {
-                 if (abs(lhs.relevance - rhs.relevance) < EPSILON) {
-                     return lhs.rating > rhs.rating;
-                 } else {
-                     return lhs.relevance > rhs.relevance;
-                 }
-             });
-        if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
-            matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
-        }
-        return matched_documents;
-    }
-
-    vector<Document> FindTopDocuments(const string& raw_query, DocumentStatus status) const {
-        return FindTopDocuments(
-            raw_query, [status](int document_id, DocumentStatus document_status, int rating) {
-                return document_status == status;
-            });
-    }
-
-    vector<Document> FindTopDocuments(const string& raw_query) const {
-        return FindTopDocuments(raw_query, DocumentStatus::ACTUAL);
-    }
-
-    int GetDocumentCount() const {
-        return documents_.size();
-    }
-
-    tuple<vector<string>, DocumentStatus> MatchDocument(const string& raw_query, int document_id) const {
-        const Query query = ParseQuery(raw_query);
-
-        vector<string> matched_words;
-        for (const string& word : query.plus_words) {
-            if (word_to_document_freqs_.count(word) == 0) {
-                continue;
-            }
-            if (word_to_document_freqs_.at(word).count(document_id)) {
-                matched_words.push_back(word);
+        void OnDeleteInstance() noexcept {
+            if (instance_counter_ptr_) {
+                assert(*instance_counter_ptr_ != 0);
+                --(*instance_counter_ptr_);
             }
         }
-        for (const string& word : query.minus_words) {
-            if (word_to_document_freqs_.count(word) == 0) {
-                continue;
+
+        int* instance_counter_ptr_ = nullptr;
+    };
+
+    // Проверка вставки в начало
+    {
+        SingleLinkedList<int> l;
+        assert(l.IsEmpty());
+        assert(l.GetSize() == 0u);
+
+        l.PushFront(0);
+        l.PushFront(1);
+        assert(l.GetSize() == 2);
+        assert(!l.IsEmpty());
+
+        l.Clear();
+        assert(l.GetSize() == 0);
+        assert(l.IsEmpty());
+    }
+
+    // Проверка фактического удаления элементов
+    {
+        int item0_counter = 0;
+        int item1_counter = 0;
+        int item2_counter = 0;
+        {
+            SingleLinkedList<DeletionSpy> list;
+            list.PushFront(DeletionSpy{item0_counter});
+            list.PushFront(DeletionSpy{item1_counter});
+            list.PushFront(DeletionSpy{item2_counter});
+
+            assert(item0_counter == 1);
+            assert(item1_counter == 1);
+            assert(item2_counter == 1);
+            list.Clear();
+            assert(item0_counter == 0);
+            assert(item1_counter == 0);
+            assert(item2_counter == 0);
+
+            list.PushFront(DeletionSpy{item0_counter});
+            list.PushFront(DeletionSpy{item1_counter});
+            list.PushFront(DeletionSpy{item2_counter});
+            assert(item0_counter == 1);
+            assert(item1_counter == 1);
+            assert(item2_counter == 1);
+        }
+        assert(item0_counter == 0);
+        assert(item1_counter == 0);
+        assert(item2_counter == 0);
+    }
+
+    // Вспомогательный класс, бросающий исключение после создания N-копии
+    struct ThrowOnCopy {
+        ThrowOnCopy() = default;
+        explicit ThrowOnCopy(int& copy_counter) noexcept
+            : countdown_ptr(&copy_counter) {
+        }
+        ThrowOnCopy(const ThrowOnCopy& other)
+            : countdown_ptr(other.countdown_ptr)  //
+        {
+            if (countdown_ptr) {
+                if (*countdown_ptr == 0) {
+                    throw std::bad_alloc();
+                } else {
+                    --(*countdown_ptr);
+                }
             }
-            if (word_to_document_freqs_.at(word).count(document_id)) {
-                matched_words.clear();
+        }
+        // Присваивание элементов этого типа не требуется
+        ThrowOnCopy& operator=(const ThrowOnCopy& rhs) = delete;
+        // Адрес счётчика обратного отсчёта. Если не равен nullptr, то уменьшается при каждом копировании.
+        // Как только обнулится, конструктор копирования выбросит исключение
+        int* countdown_ptr = nullptr;
+    };
+
+    {
+        bool exception_was_thrown = false;
+        // Последовательно уменьшаем счётчик копирований до нуля, пока не будет выброшено исключение
+        for (int max_copy_counter = 5; max_copy_counter >= 0; --max_copy_counter) {
+            // Создаём непустой список
+            SingleLinkedList<ThrowOnCopy> list;
+            list.PushFront(ThrowOnCopy{});
+            try {
+                int copy_counter = max_copy_counter;
+                list.PushFront(ThrowOnCopy(copy_counter));
+                // Если метод не выбросил исключение, список должен перейти в новое состояние
+                assert(list.GetSize() == 2);
+            } catch (const std::bad_alloc&) {
+                exception_was_thrown = true;
+                // После выбрасывания исключения состояние списка должно остаться прежним
+                assert(list.GetSize() == 1);
                 break;
             }
         }
-        return {matched_words, documents_.at(document_id).status};
+        assert(exception_was_thrown);
+    }
+}
+
+void Test2() {
+    // Итерирование по пустому списку
+    {
+        SingleLinkedList<int> list;
+        // Константная ссылка для доступа к константным версиям begin()/end()
+        const auto& const_list = list;
+
+        // Итераторы begin и end у пустого диапазона равны друг другу
+        assert(list.begin() == list.end());
+        assert(const_list.begin() == const_list.end());
+        assert(list.cbegin() == list.cend());
+        assert(list.cbegin() == const_list.begin());
+        assert(list.cend() == const_list.end());
     }
 
-    int GetDocumentId(int index) const {
-        return docs_id_in_a_row_.at(index);
-    }
+    // Итерирование по непустому списку
+    {
+        SingleLinkedList<int> list;
+        const auto& const_list = list;
 
-private:
-    vector<int> docs_id_in_a_row_;
+        list.PushFront(1);
+        assert(list.GetSize() == 1u);
+        assert(!list.IsEmpty());
 
-    static bool IsValidWord(const string& word) {
-        return none_of(word.begin(), word.end(), [](char c) {
-            return c >= '\0' && c < ' ';
-        });
-    }
+        assert(const_list.begin() != const_list.end());
+        assert(const_list.cbegin() != const_list.cend());
+        assert(list.begin() != list.end());
 
-    struct DocumentData {
-        int rating;
-        DocumentStatus status;
-    };
-    const set<string> stop_words_;
-    map<string, map<int, double>> word_to_document_freqs_;
-    map<int, DocumentData> documents_;
+        assert(const_list.begin() == const_list.cbegin());
 
-    bool IsStopWord(const string& word) const {
-        return stop_words_.count(word) > 0;
-    }
+        assert(*list.cbegin() == 1);
+        *list.begin() = -1;
+        assert(*list.cbegin() == -1);
 
-    vector<string> SplitIntoWordsNoStop(const string& text) const {
-        vector<string> words;
-        for (const string& word : SplitIntoWords(text)) {
-            if (!IsStopWord(word)) {
-                words.push_back(word);
-            }
+        const auto old_begin = list.cbegin();
+        list.PushFront(2);
+        assert(list.GetSize() == 2);
+
+        const auto new_begin = list.cbegin();
+        assert(new_begin != old_begin);
+        // Проверка прединкремента
+        {
+            auto new_begin_copy(new_begin);
+            assert((++(new_begin_copy)) == old_begin);
         }
-        return words;
-    }
-
-    static int ComputeAverageRating(const vector<int>& ratings) {
-        if (ratings.empty()) {
-            return 0;
+        // Проверка постинкремента
+        {
+            auto new_begin_copy(new_begin);
+            assert(((new_begin_copy)++) == new_begin);
+            assert(new_begin_copy == old_begin);
         }
-        int rating_sum = 0;
-        for (const int rating : ratings) {
-            rating_sum += rating;
-        }
-        return rating_sum / static_cast<int>(ratings.size());
-    }
-
-    struct QueryWord {
-        string data;
-        bool is_minus;
-        bool is_stop;
-    };
-
-    QueryWord ParseQueryWord(string text) const {
-        bool is_minus = false;
-        if (!IsValidWord(text)) {
-            throw invalid_argument("Invalid_argument");
-        }
-        if (text[0] == '-') {
-            text = text.substr(1);
-            if (text[0] == '-' || text.empty()) {
-                throw invalid_argument("Invalid_argument");
-            }
-            is_minus = true;
-        }
-        return {text, is_minus, IsStopWord(text)};
-    }
-
-    struct Query {
-        set<string> plus_words;
-        set<string> minus_words;
-    };
-
-    Query ParseQuery(const string& text) const {
-        Query query;
-        for (const string& word : SplitIntoWords(text)) {
-            const QueryWord query_word = ParseQueryWord(word);
-            if (!query_word.is_stop) {
-                if (query_word.is_minus) {
-                    query.minus_words.insert(query_word.data);
-                } else {
-                    query.plus_words.insert(query_word.data);
-                }
-            }
-        }
-        return query;
-    }
-
-    double ComputeWordInverseDocumentFreq(const string& word) const {
-        return log(GetDocumentCount() * 1.0 / word_to_document_freqs_.at(word).size());
-    }
-
-    template <typename DocumentPredicate>
-    vector<Document> FindAllDocuments(const Query& query,
-                                      DocumentPredicate document_predicate) const {
-        map<int, double> document_to_relevance;
-        for (const string& word : query.plus_words) {
-            if (word_to_document_freqs_.count(word) == 0) {
-                continue;
-            }
-            const double inverse_document_freq = ComputeWordInverseDocumentFreq(word);
-            for (const auto &[document_id, term_freq] : word_to_document_freqs_.at(word)) {
-                const auto& document_data = documents_.at(document_id);
-                if (document_predicate(document_id, document_data.status, document_data.rating)) {
-                    document_to_relevance[document_id] += term_freq * inverse_document_freq;
-                }
-            }
-        }
-
-        for (const string& word : query.minus_words) {
-            if (word_to_document_freqs_.count(word) == 0) {
-                continue;
-            }
-            for (const auto &[document_id, _] : word_to_document_freqs_.at(word)) {
-                document_to_relevance.erase(document_id);
-            }
-        }
-
-        vector<Document> matched_documents;
-        for (const auto &[document_id, relevance] : document_to_relevance) {
-            matched_documents.push_back(
-                {document_id, relevance, documents_.at(document_id).rating});
-        }
-        return matched_documents;
-    }
-};
-
-class RequestQueue {
-public:
-    explicit RequestQueue(const SearchServer& search_server) : requests_(), no_result_counter_(0), current_time_(0), search_server_(search_server) {
-    }
-
-    template <typename DocumentPredicate>
-    vector<Document> AddFindRequest(const string& raw_query, DocumentPredicate document_predicate) {
-        vector<Document> search_results = search_server_.FindTopDocuments(raw_query, document_predicate);
-        AddRequest(search_results);
-        return search_results;
-    }
-
-    vector<Document> AddFindRequest(const string& raw_query, DocumentStatus status) {
-        vector<Document> search_results = search_server_.FindTopDocuments(raw_query, status);
-        AddRequest(search_results);
-        return search_results;
-    }
-
-    vector<Document> AddFindRequest(const string& raw_query) {
-        vector<Document> search_results = search_server_.FindTopDocuments(raw_query);
-        AddRequest(search_results);
-        return search_results;
-    }
-
-    int GetNoResultRequests() const {
-        return no_result_counter_;
-    }
-
-private:
-    struct QueryResult {
-        bool is_empty;
-        int query_time;
-    };
-    deque<QueryResult> requests_;
-    const static int min_in_day_ = 1440;
-    int no_result_counter_;
-    int current_time_;
-    const SearchServer& search_server_;
-
-    void AddRequest(vector<Document>& search_results) {
-        QueryResult result;
-        ++current_time_;
-        if (search_results.size() == 0) {
-            result.is_empty = true;
-            result.query_time = current_time_ % min_in_day_;
-            ++no_result_counter_;
-        } else {
-            result.is_empty = false;
-            result.query_time = current_time_ % min_in_day_;
-        }
-        requests_.push_back(result);
-        if (requests_.size() - 1 == min_in_day_) {
-            QueryResult front_result = *requests_.begin();
-            if (front_result.is_empty) {
-                --no_result_counter_;
-            }
-            requests_.pop_front();
+        // Итератор, указывающий на позицию после последнего элемента, равен итератору end()
+        {
+            auto old_begin_copy(old_begin);
+            assert((++old_begin_copy) == list.end());
         }
     }
-};
+    // Преобразование итераторов
+    {
+        SingleLinkedList<int> list;
+        list.PushFront(1);
+        // Конструирование ConstIterator из Iterator
+        SingleLinkedList<int>::ConstIterator const_it(list.begin());
+        assert(const_it == list.cbegin());
+        assert(*const_it == *list.cbegin());
 
-// ==================== для примера =========================
+        SingleLinkedList<int>::ConstIterator const_it1;
+        // Присваивание ConstIterator'у значения Iterator
+        const_it1 = list.begin();
+        assert(const_it1 == const_it);
+    }
+    // Проверка оператора ->
+    {
+        using namespace std;
+        SingleLinkedList<std::string> string_list;
 
-template <typename Container>
-auto Paginate(const Container& c, size_t page_size) {
-    return Paginator(begin(c), end(c), page_size);
+        string_list.PushFront("one"s);
+        assert(string_list.cbegin()->length() == 3u);
+        string_list.begin()->push_back('!');
+        assert(*string_list.begin() == "one!"s);
+    }
 }
 
 int main() {
-    SearchServer search_server("and in at"s);
-    RequestQueue request_queue(search_server);
-    search_server.AddDocument(1, "curly cat curly tail"s, DocumentStatus::ACTUAL, {7, 2, 7});
-    search_server.AddDocument(2, "curly dog and fancy collar"s, DocumentStatus::ACTUAL, {1, 2, 3});
-    search_server.AddDocument(3, "big cat fancy collar "s, DocumentStatus::ACTUAL, {1, 2, 8});
-    search_server.AddDocument(4, "big dog sparrow Eugene"s, DocumentStatus::ACTUAL, {1, 3, 2});
-    search_server.AddDocument(5, "big dog sparrow Vasiliy"s, DocumentStatus::ACTUAL, {1, 1, 1});
-    // 1439 запросов с нулевым результатом
-    for (int i = 0; i < 1439; ++i) {
-        request_queue.AddFindRequest("empty request"s);
-    }
-    // все еще 1439 запросов с нулевым результатом
-    request_queue.AddFindRequest("curly dog"s);
-    // новые сутки, первый запрос удален, 1438 запросов с нулевым результатом
-    request_queue.AddFindRequest("big collar"s);
-    // первый запрос удален, 1437 запросов с нулевым результатом
-    request_queue.AddFindRequest("sparrow"s);
-    cout << "Total empty requests: "s << request_queue.GetNoResultRequests() << endl;
-    return 0;
+    Test1();
+    Test2();
 }

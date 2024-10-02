@@ -2,6 +2,1039 @@
 
 
 
+/////////////////////////////////////////////////////////
+#include <algorithm>
+#include <cassert>
+#include <stdexcept>
+#include <vector>
+
+using namespace std;
+
+// Используйте эту заготовку PtrVector или замените её на свою реализацию
+template <typename T>
+class PtrVector {
+public:
+    PtrVector() = default;
+
+    // Создаёт вектор указателей на копии объектов из other
+    PtrVector(const PtrVector& other) {
+        // Резервируем место в vector-е для хранения нужного количества элементов
+        // Благодаря этому при push_back не будет выбрасываться исключение
+        items_.reserve(other.items_.size());
+
+        try {
+            for (auto p : other.items_) {
+                // Копируем объект, если указатель на него ненулевой
+                auto p_copy = p ? new T(*p) : nullptr;  // new может выбросить исключение
+
+                // Не выбросит исключение, т. к. в vector память уже зарезервирована
+                items_.push_back(p_copy);
+            }
+        } catch (...) {
+            // удаляем элементы в векторе и перевыбрасываем пойманное исключение
+            DeleteItems();
+            throw;
+        }
+    }
+
+    PtrVector& operator=(const PtrVector& rhs) {
+        if (this != &rhs) {
+            // Реализация операции присваивания с помощью идиомы Copy-and-swap.
+            // Если исключение будет выброшено, то на текущий объект оно не повлияет.
+            PtrVector rhs_copy(rhs);
+
+            // rhs_copy содержит копию правого аргумента.
+            // Обмениваемся с ним данными.
+            swap(rhs_copy); // или просто items_.swap(rhs_copy.items_); - тогда метод swap в классе не нужен
+
+            // Теперь текущий объект содержит копию правого аргумента,
+            // а rhs_copy - прежнее состояние текущего объекта, которое при выходе
+            // из блока будет разрушено.
+        }
+
+        return *this;
+    }
+
+    // обменивает состояние текущего объекта с other без выбрасывания исключений
+    void swap(PtrVector& other) noexcept {
+        std::swap(GetItems(), other.GetItems());
+    };
+
+    // Деструктор удаляет объекты в куче, на которые ссылаются указатели,
+    // в векторе items_
+    ~PtrVector() {
+        DeleteItems();
+    }
+
+    // Возвращает ссылку на вектор указателей
+    vector<T*>& GetItems() noexcept {
+        return items_;
+    }
+
+    // Возвращает константную ссылку на вектор указателей
+    vector<T*> const& GetItems() const noexcept {
+        return items_;
+    }
+
+private:
+    void DeleteItems() noexcept {
+        for (auto p : items_) {
+            delete p;
+        }
+    }
+
+    vector<T*> items_;
+};
+
+// Эта функция main тестирует шаблон класса PtrVector
+int main() {
+    struct CopyingSpy {
+        CopyingSpy(int& copy_count, int& deletion_count)
+            : copy_count_(copy_count)
+            , deletion_count_(deletion_count) {
+        }
+        CopyingSpy(const CopyingSpy& rhs)
+            : copy_count_(rhs.copy_count_)          // счётчик копирований
+            , deletion_count_(rhs.deletion_count_)  // счётчик удалений
+        {
+            if (rhs.throw_on_copy_) {
+                throw runtime_error("copy construction failed"s);
+            }
+            ++copy_count_;
+        }
+        ~CopyingSpy() {
+            ++deletion_count_;
+        }
+        void ThrowOnCopy() {
+            throw_on_copy_ = true;
+        }
+
+    private:
+        int& copy_count_;
+        int& deletion_count_;
+        bool throw_on_copy_ = false;
+    };
+
+    // Проверка присваивания
+    {
+        int item0_copy_count = 0;
+        int item0_deletion_count = 0;
+        {
+            PtrVector<CopyingSpy> v;
+
+            v.GetItems().push_back(new CopyingSpy(item0_copy_count, item0_deletion_count));
+            v.GetItems().push_back(nullptr);
+            {
+                PtrVector<CopyingSpy> v_copy;
+                v_copy = v;
+                assert(v_copy.GetItems().size() == v.GetItems().size());
+                assert(v_copy.GetItems().at(0) != v.GetItems().at(0));
+                assert(v_copy.GetItems().at(1) == nullptr);
+                assert(item0_copy_count == 1);
+                assert(item0_deletion_count == 0);
+            }
+            assert(item0_deletion_count == 1);
+        }
+        assert(item0_deletion_count == 2);
+    }
+
+    // Проверка корректности самоприсваивания
+    {
+        int item0_copy_count = 0;
+        int item0_deletion_count = 0;
+
+        PtrVector<CopyingSpy> v;
+        v.GetItems().push_back(new CopyingSpy(item0_copy_count, item0_deletion_count));
+        CopyingSpy* first_item = v.GetItems().front();
+
+        v = v;
+        assert(v.GetItems().size() == 1);
+        // При самоприсваивании объекты должны быть расположены по тем же адресам
+        assert(v.GetItems().front() == first_item);
+        assert(item0_copy_count == 0);
+        assert(item0_deletion_count == 0);
+    }
+
+    // Проверка обеспечения строгой гарантии безопасности исключений при присваивании
+    {
+        int item0_copy_count = 0;
+        int item0_deletion_count = 0;
+
+        int item1_copy_count = 0;
+        int item1_deletion_count = 0;
+
+        // v хранит 2 элемента
+        PtrVector<CopyingSpy> v;
+        v.GetItems().push_back(new CopyingSpy(item0_copy_count, item0_deletion_count));
+        v.GetItems().push_back(new CopyingSpy(item1_copy_count, item1_deletion_count));
+
+        int other_item0_copy_count = 0;
+        int other_item0_deletion_count = 0;
+        // other_vector хранит 1 элемент, при копировании которого будет выброшено исключение
+        PtrVector<CopyingSpy> other_vector;
+        other_vector.GetItems().push_back(new CopyingSpy(other_item0_copy_count, other_item0_deletion_count));
+        other_vector.GetItems().front()->ThrowOnCopy();
+
+        // Сохраняем массив указателей
+        auto v_items(v.GetItems());
+
+        try {
+            v = other_vector;
+            // Операция должна выбросить исключение
+            assert(false);
+        } catch (const runtime_error&) {
+        }
+
+        // Элементы массива должны остаться прежними
+        assert(v.GetItems() == v_items);
+        assert(item0_copy_count == 0);
+        assert(item1_copy_count == 0);
+        assert(other_item0_copy_count == 0);
+    }
+}
+
+/////////////////////////////////////////////
+#include <algorithm>
+#include <cassert>
+#include <vector>
+
+using namespace std;
+
+template <typename T>
+class PtrVector {
+public:
+    PtrVector() = default;
+
+    // Создаёт вектор указателей на копии объектов из other
+    PtrVector(const PtrVector& other) {
+        // Реализуйте копирующий конструктор самостоятельно
+        items_.reserve(other.items_.size());
+        
+        try {
+            for (T* item : other.items_) {
+                if (item != nullptr) {
+                    T* new_item = new T(*item);
+                    items_.push_back(new_item);
+                } else {
+                    items_.push_back(nullptr);
+                }
+            }
+        } catch (...) {
+            Cleanup();
+            throw;
+        }
+    }
+    // Деструктор удаляет объекты в куче, на которые ссылаются указатели,
+    // в векторе items_
+    ~PtrVector() {
+        // Реализуйте тело деструктора самостоятельно
+        for (T* item : items_) {
+            delete item;
+        }
+    }
+
+    // Возвращает ссылку на вектор указателей
+    vector<T*>& GetItems() noexcept {
+        // Реализуйте метод самостоятельно
+        return items_;
+    }
+
+    // Возвращает константную ссылку на вектор указателей
+    vector<T*> const& GetItems() const noexcept {
+        // Реализуйте метод самостоятельно
+        return items_;
+    }
+
+    void Cleanup() {
+        for (T* item : items_) {
+            delete item;
+        }
+    }
+
+private:
+    vector<T*> items_;
+
+};
+
+// Эта функция main тестирует шаблон класса PtrVector
+int main() {
+    // Вспомогательный "шпион", позволяющий узнать о своём удалении
+    struct DeletionSpy {
+        explicit DeletionSpy(bool& is_deleted)
+            : is_deleted_(is_deleted) {
+        }
+        ~DeletionSpy() {
+            is_deleted_ = true;
+        }
+        bool& is_deleted_;
+    };
+
+    // Проверяем удаление элементов
+    {
+        bool spy1_is_deleted = false;
+        DeletionSpy* ptr1 = new DeletionSpy(spy1_is_deleted);
+        {
+            PtrVector<DeletionSpy> ptr_vector;
+            ptr_vector.GetItems().push_back(ptr1);
+            assert(!spy1_is_deleted);
+
+            // Константная ссылка на ptr_vector
+            const auto& const_ptr_vector_ref(ptr_vector);
+            // И константная, и неконстантная версия GetItems
+            // должны вернуть ссылку на один и тот же вектор
+            assert(&const_ptr_vector_ref.GetItems() == &ptr_vector.GetItems());
+        }
+        // При разрушении ptr_vector должен удалить все объекты, на которые
+        // ссылаются находящиеся внутри него указателели
+        assert(spy1_is_deleted);
+    }
+
+    // Вспомогательный «шпион», позволяющий узнать о своём копировании
+    struct CopyingSpy {
+        explicit CopyingSpy(int& copy_count)
+            : copy_count_(copy_count) {
+        }
+        CopyingSpy(const CopyingSpy& rhs)
+            : copy_count_(rhs.copy_count_)  //
+        {
+            ++copy_count_;
+        }
+        int& copy_count_;
+    };
+
+    // Проверяем копирование элементов при копировании массива указателей
+    {
+        // 10 элементов
+        vector<int> copy_counters(10);
+
+        PtrVector<CopyingSpy> ptr_vector;
+        // Подготавливаем оригинальный массив указателей
+        for (auto& counter : copy_counters) {
+            ptr_vector.GetItems().push_back(new CopyingSpy(counter));
+        }
+        // Последний элемент содержит нулевой указатель
+        ptr_vector.GetItems().push_back(nullptr);
+
+        auto ptr_vector_copy(ptr_vector);
+        // Количество элементов в копии равно количеству элементов оригинального вектора
+        assert(ptr_vector_copy.GetItems().size() == ptr_vector.GetItems().size());
+
+        // копия должна хранить указатели на новые объекты
+        assert(ptr_vector_copy.GetItems() != ptr_vector.GetItems());
+        // Последний элемент исходного массива и его копии - нулевой указатель
+        assert(ptr_vector_copy.GetItems().back() == nullptr);
+        // Проверяем, что элементы были скопированы (копирующие шпионы увеличивают счётчики копий).
+        assert(all_of(copy_counters.begin(), copy_counters.end(), [](int counter) {
+            return counter == 1;
+        }));
+    }
+}
+
+///////////////////////////////////////////
+#include <cassert>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+using namespace std;
+
+// Умный указатель, удаляющий связанный объект при своём разрушении.
+// Параметр шаблона T задаёт тип объекта, на который ссылается указатель
+template <typename T>
+class ScopedPtr {
+public:
+    // Конструктор по умолчанию создаёт нулевой указатель,
+    // так как поле ptr_ имеет значение по умолчанию nullptr
+    ScopedPtr() = default;
+
+    // Создаёт указатель, ссылающийся на переданный raw_ptr.
+    // raw_ptr ссылается либо на объект, созданный в куче при помощи new,
+    // либо является нулевым указателем
+    // Спецификатор noexcept обозначает, что метод не бросает исключений
+    explicit ScopedPtr(T* raw_ptr) noexcept : ptr_(raw_ptr) {
+    }
+
+    // Удаляем у класса конструктор копирования
+    ScopedPtr(const ScopedPtr&) = delete;
+
+    // Деструктор. Удаляет объект, на который ссылается умный указатель.
+    ~ScopedPtr() {
+        // Реализуйте тело деструктора самостоятельно
+        delete ptr_;
+    }
+
+    // Возвращает указатель, хранящийся внутри ScopedPtr
+    T* GetRawPtr() const noexcept {
+        return ptr_;
+        // Напишите код метода самостоятельно
+    }
+
+    // Прекращает владение объектом, на который ссылается умный указатель.
+    // Возвращает прежнее значение "сырого" указателя и устанавливает поле ptr_ в null
+    T* Release() noexcept {
+        // Реализуйте самостоятельно
+        T* ret_ptr = ptr_;
+        ptr_ = nullptr;
+        return ret_ptr;
+    }
+
+    // Оператор приведения к типу bool позволяет узнать, ссылается ли умный указатель
+    // на какой-либо объект
+    explicit operator bool() const noexcept {
+        // Реализуйте самостоятельно
+        return ptr_ != nullptr;
+    }
+
+    // Оператор разыменования возвращает ссылку на объект
+    // Выбрасывает исключение std::logic_error, если указатель нулевой
+    T& operator*() const {
+        // Реализуйте самостоятельно
+        if (!ptr_) {
+            throw logic_error("Error: ptr_ is null"s);
+        }
+        return *ptr_;
+    }
+
+    // Оператор -> должен возвращать указатель на объект
+    // Выбрасывает исключение std::logic_error, если указатель нулевой
+    T* operator->() const {
+        // Реализуйте самостоятельно
+        if (!ptr_) {
+            throw logic_error("Error: ptr_ is null"s);
+        }
+        return ptr_;
+    }
+
+private:
+    T* ptr_ = nullptr;
+};
+
+// Этот main тестирует класс ScopedPtr
+int main() {
+    // Проверка работы оператора приведения к типу bool
+    {
+        // Для нулевого указателя приведение к типу bool возвращает false
+        const ScopedPtr<int> empty_ptr;
+        assert(!empty_ptr);
+
+        // Для ненулевого указателя приведение к типу bool возвращает true
+        const ScopedPtr<int> ptr_to_existing_object(new int(0));
+        assert(ptr_to_existing_object);
+
+        static_assert(noexcept(static_cast<bool>(ptr_to_existing_object)));
+    }
+
+    // Проверка работы оператора разыменования *
+    {
+        string* raw_ptr = new string("hello");
+        ScopedPtr<string> smart_ptr(raw_ptr);
+        // Ссылка, возвращаемая оператором разыменования, должна ссылаться на объект,
+        // на который указывает умный указатель
+        assert(&*smart_ptr == raw_ptr);
+
+        try {
+            ScopedPtr<int> empty_ptr;
+            // При попытке разыменовать пустой указатель должно быть выброшено
+            // исключение logic_error
+            *empty_ptr;
+            // Сюда попасть мы не должны
+            assert(false);
+        } catch (const logic_error&) {
+            // мы там, где нужно
+        } catch (...) {
+            // Других исключений выбрасываться не должно
+            assert(false);
+        }
+    }
+    
+    // Проверка работы оператора ->
+    {
+        string* raw_ptr = new string("hello");
+        ScopedPtr<string> smart_ptr(raw_ptr);
+        // Доступ к членам класса через умный указатель должен быть аналогичен
+        // доступу через "сырой" указатель
+        assert(smart_ptr->data() == raw_ptr->data());
+
+        try {
+            ScopedPtr<string> empty_ptr;
+            // При попытке разыменовать пустой указатель должно быть выброшено
+            // исключение logic_error
+            empty_ptr->clear();
+            // Сюда попасть мы не должны
+            assert(false);
+        } catch (const logic_error&) {
+            // мы там, где нужно
+        } catch (...) {
+            // Других исключений выбрасываться не должно
+            assert(false);
+        }
+    }
+
+    // Пример использования
+    {
+        // На этой структуре будет проверяться работа умного указателя
+        struct Object {
+            Object() {
+                cout << "Object is default constructed"s << endl;
+            }
+            void DoSomething() {
+                cout << "Doing something"s << endl;
+            }
+            ~Object() {
+                cout << "Object is destroyed"s << endl;
+            }
+        };
+
+        // Сконструированный по умолчанию указатель ссылается на nullptr
+        ScopedPtr<Object> empty_smart_ptr;
+        // Перегруженный оператор приведения к типу bool вернёт false для пустого указателя
+        assert(!empty_smart_ptr);
+
+        ScopedPtr<Object> smart_ptr(new Object());
+        // Перегруженный оператор bool вернёт true для указателя, ссылающегося на объект
+        assert(smart_ptr);
+
+        // Проверка оператора разыменования
+        (*smart_ptr).DoSomething();
+        // Проверка оператора доступа к членам класса
+        smart_ptr->DoSomething();
+    }
+}
+
+////////////////////////////////////////////////////////
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// Щупальце
+class Tentacle {
+public:
+    explicit Tentacle(int id)
+        : id_(id) {
+    }
+
+    int GetId() const {
+        return id_;
+    }
+
+private:
+    int id_ = 0;
+};
+
+// Осьминог
+class Octopus {
+public:
+    Octopus() {
+        Tentacle* t = nullptr;
+        try {
+            for (int i = 1; i <= 8; ++i) {
+                t = new Tentacle(i);      // Может выбросить исключение bad_alloc
+                tentacles_.push_back(t);  // Может выбросить исключение bad_alloc
+
+                // Обнуляем указатель на щупальце, которое уже добавили в tentacles_,
+                // чтобы не удалить его в обработчике catch повторно
+                t = nullptr;
+            }
+        } catch (const bad_alloc&) {
+            // Удаляем щупальца, которые успели попасть в контейнер tentacles_
+            Cleanup();
+            // Удаляем щупальце, которое создали, но не добавили в tentacles_
+            delete t;
+            // Конструктор не смог создать осьминога с восемью щупальцами,
+            // поэтому выбрасываем исключение, чтобы сообщить вызывающему коду об ошибке
+            // throw без параметров внутри catch выполняет ПЕРЕВЫБРОС пойманного исключения
+            throw;
+        }
+    }
+
+    const Tentacle& GetTentacle(int index) const {
+        if (index < 0 || static_cast<size_t>(index) >= tentacles_.size()) {
+            throw out_of_range("Invalid tentacle index"s);
+        }
+        // Чтобы превратить указатель в ссылку, разыменовываем его
+        return *tentacles_[index];
+    }
+
+    ~Octopus() {
+        // Осьминог владеет объектами в динамической памяти (щупальца),
+        // которые должны быть удалены при его разрушении.
+        // Деструктор - лучшее место, чтобы прибраться за собой.
+        Cleanup();
+    }
+
+private:
+    void Cleanup() {
+        // Удаляем щупальца осьминога из динамической памяти
+        for (Tentacle* t : tentacles_) {
+            delete t;
+        }
+        // Очищаем массив указателей на щупальца
+        tentacles_.clear();
+    }
+
+    // Вектор хранит указатели на щупальца. Сами объекты щупалец находятся в куче
+    vector<Tentacle*> tentacles_;
+};
+
+int main() {
+    {
+        Octopus octopus;
+        // Мы просто хотели ещё одного осьминога
+        Octopus octopus1 = octopus;
+        // Всё было хорошо и не предвещало беды...
+        // ... до этого момента
+    }
+    cout << "Congratulations. Everything is OK!"s << endl;
+}
+
+////////////////////////////////
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// Щупальце
+class Tentacle {
+public:
+    explicit Tentacle(int id)
+        : id_(id) {
+    }
+
+    int GetId() const {
+        return id_;
+    }
+
+private:
+    int id_ = 0;
+};
+
+// Осьминог
+class Octopus {
+public:
+    Octopus() {
+        // <--- Тело конструктора обновлено
+        Tentacle* t = nullptr;
+        try {
+            for (int i = 1; i <= 8; ++i) {
+                t = new Tentacle(i);
+                tentacles_.push_back(t);
+                t = nullptr;
+            }
+        } catch (const bad_alloc&) {
+            Cleanup();
+            delete t;
+            throw bad_alloc();
+        }
+        // --->
+    }
+
+    // <--- Добавлен деструктор
+    ~Octopus() {
+        Cleanup();
+    }
+    // --->
+
+private:
+    // <--- Добавлен метод Cleanup
+    void Cleanup() {
+        for (Tentacle* t : tentacles_) {
+            delete t;
+        }
+        tentacles_.clear();
+    }
+    // --->
+
+    vector<Tentacle*> tentacles_;
+};
+
+int main() {
+    Octopus octopus;
+}
+
+/////////////////////////////////////////////
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+// Породы кошек
+enum class CatBreed {
+    Bengal,
+    Balinese,
+    Persian,
+    Siamese,
+    Siberian,
+    Sphynx,
+};
+
+// Пол
+enum class Gender {
+    Male,
+    Female,
+};
+
+struct Cat {
+    string name;
+    Gender gender;
+    CatBreed breed;
+    int age;
+};
+
+string CatBreedToString(CatBreed breed) {
+    switch (breed) {
+        case CatBreed::Bengal:
+            return "Bengal"s;
+        case CatBreed::Balinese:
+            return "Balinese"s;
+        case CatBreed::Persian:
+            return "Persian"s;
+        case CatBreed::Siamese:
+            return "Siamese"s;
+        case CatBreed::Siberian:
+            return "Siberian";
+        case CatBreed::Sphynx:
+            return "Sphynx"s;
+        default:
+            throw invalid_argument("Invalid cat breed"s);
+    }
+}
+
+ostream& operator<<(ostream& out, CatBreed breed) {
+    out << CatBreedToString(breed);
+    return out;
+}
+
+ostream& operator<<(ostream& out, Gender gender) {
+    out << (gender == Gender::Male ? "male"s : "female"s);
+    return out;
+}
+
+ostream& operator<<(ostream& out, const Cat& cat) {
+    out << '{' << cat.name << ", "s << cat.gender;
+    out << ", breed: "s << cat.breed << ", age:"s << cat.age << '}';
+    return out;
+}
+
+// Возвращает массив указателей на элементы вектора cats, отсортированные с использованием
+// компаратора comp. Компаратор comp - функция, принимающая два аргумента типа const Cat&
+// и возвращающая true, если значения упорядочены, и false в ином случае
+template <typename Comparator>
+vector<const Cat*> GetSortedCats(const vector<Cat>& cats, const Comparator& comp) {
+    vector<const Cat*> sorted_cat_pointers;
+
+    if (cats.size() == 0) {
+        return {};
+    }
+    sorted_cat_pointers.reserve(cats.size());
+
+    for (const auto& cat : cats) {
+        sorted_cat_pointers.push_back(&cat);
+    }
+    
+    //Напишите тело функции самостоятельно. Подсказка:
+    //1) Поместите в массив sorted_cat_pointers адреса объектов из массива cats.
+    //2) Отсортируйте массив sorted_cat_pointers с помощью переданного компаратора comp.
+    //   Так как comp сравнивает ссылки на объекты, а отсортировать нужно указатели,
+    //   передайте в sort лямбда функцию, принимающую указатели и сравнивающую объекты
+    //   при помощи компаратора comp:
+    //   [comp](const Cat* lhs, const Cat* rhs) {
+    //       return comp(*lhs, *rhs);
+    //   }
+    
+    sort(sorted_cat_pointers.begin(), sorted_cat_pointers.end(), [comp](const Cat* lhs, const Cat* rhs) {
+        return comp(*lhs, *rhs);
+    });
+    return sorted_cat_pointers;
+}
+
+// Выводит в поток out значения объектов, на который ссылаются указатели вектора cat_pointers.
+// Пример вывода элементов vector<const Cat*>:
+// {{Tom, male, breed: Bengal, age:2}, {Charlie, male, breed: Balinese, age:7}}
+void PrintCatPointerValues(const vector<const Cat*>& cat_pointers, ostream& out) {
+    out << "{";
+    bool is_first = true;
+    for (const auto& cat: cat_pointers) {
+        if (is_first) {
+            out << *cat;
+            is_first = false;
+        } else {
+            out << ", " << *cat;
+        }
+    }
+    out << "}";
+}
+
+int main() {
+    const vector<Cat> cats = {
+        {"Tom"s, Gender::Male, CatBreed::Bengal, 2},
+        {"Leo"s, Gender::Male, CatBreed::Siberian, 3},
+        {"Luna"s, Gender::Female, CatBreed::Siamese, 1},
+        {"Charlie"s, Gender::Male, CatBreed::Balinese, 7},
+        {"Ginger"s, Gender::Female, CatBreed::Sphynx, 5},
+        {"Tom"s, Gender::Male, CatBreed::Siamese, 2},
+    };
+
+    {
+        auto sorted_cats = GetSortedCats(cats, [](const Cat& lhs, const Cat& rhs) {
+            return tie(lhs.breed, lhs.name) < tie(rhs.breed, rhs.name);
+        });
+
+        cout << "Cats sorted by breed and name:"s << endl;
+        PrintCatPointerValues(sorted_cats, cout);
+        cout << endl;
+    }
+
+    {
+        auto sorted_cats = GetSortedCats(cats, [](const Cat& lhs, const Cat& rhs) {
+            return tie(lhs.gender, lhs.breed) < tie(rhs.gender, rhs.breed);
+        });
+
+        cout << "Cats sorted by gender and breed:"s << endl;
+        PrintCatPointerValues(sorted_cats, cout);
+        cout << endl;
+    }
+    return 0;
+}
+
+////////////////////////////////////////////////
+#include <cassert>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main() {
+    int value = 1;
+
+    // Сначала value_ptr ссылается на value
+    int* value_ptr = &value;
+
+    cout << "&value: "s << &value << endl;
+    cout << "value_ptr: "s << value_ptr << endl;
+    assert(*value_ptr == 1);
+
+    int another_value = 2;
+    // Затем ссылается на another_value
+    value_ptr = &another_value;
+
+    cout << "&another_value: "s << &another_value << endl;
+    cout << "value_ptr: "s << value_ptr << endl;
+    assert(*value_ptr == 2);
+}
+
+////////////////////////////////////////////////
+#include <cassert>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+int main() {
+    int value = 1;
+
+    // Сначала value_ptr ссылается на value
+    int* value_ptr = &value;
+
+    cout << "&value: "s << &value << endl;
+    cout << "value_ptr: "s << value_ptr << endl;
+    assert(*value_ptr == 1);
+
+    int another_value = 2;
+    // Затем ссылается на another_value
+    value_ptr = &another_value;
+
+    cout << "&another_value: "s << &another_value << endl;
+    cout << "value_ptr: "s << value_ptr << endl;
+    assert(*value_ptr == 2);
+}
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <iostream>
+#include <random>
+#include <vector>
+
+using namespace std;
+
+int EffectiveCount(const vector<int>& v, int n, int i) {
+    
+    double expected_answer = log2(static_cast<double>(v.size()));
+
+    int64_t expected_border = static_cast<int64_t>(v.size())*(i + 1)/(n + 1);
+    
+    bool use_find_if = false;
+    if (expected_border <= expected_answer) {
+        use_find_if = true;
+    }
+    
+    auto iter = v.begin();
+    if (use_find_if) {
+        cout << "Using find_if\n";
+        iter = find_if(v.begin(), v.end(), [i](int x) {
+            return x > i;
+        });
+    } else {
+        cout << "Using upper_bound\n";
+        iter = upper_bound(v.begin(), v.end(), i);
+    }
+
+    return iter - v.begin();
+}
+
+int main() {
+    static const int NUMBERS = 1'000'000;
+    static const int MAX = 1'000'000'000;
+
+    mt19937 r;
+    uniform_int_distribution<int> uniform_dist(0, MAX);
+
+    vector<int> nums;
+    for (int i = 0; i < NUMBERS; ++i) {
+        int random_number = uniform_dist(r);
+        nums.push_back(random_number);
+    }
+    sort(nums.begin(), nums.end());
+
+    int i;
+    cin >> i;
+    int result = EffectiveCount(nums, MAX, i);
+    cout << "Total numbers before "s << i << ": "s << result << endl;
+}
+
+//////////////////////////////////////////////////////////
+
+#include <algorithm>
+#include <deque>
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+struct Ticket {
+    int id;
+    string name;
+};
+
+class TicketOffice {
+public:
+    // добавить билет в систему
+    void PushTicket(const string& name) {
+        Ticket t;
+        t.name = name;
+        t.id = last_id_;
+        // реализуйте метод
+        tickets_.push_back(t);
+        ++last_id_;
+    }
+
+    // получить количество доступных билетов
+    int GetAvailable() const {
+        return tickets_.size();
+        // реализуйте метод
+    }
+
+    // получить количество доступных билетов определённого типа
+    int GetAvailable(const string& name) const {
+        int counter = 0;
+        for (auto it : tickets_) {
+            if (it.name == name) {
+            ++counter;
+            }
+        }
+        return counter;
+        // реализуйте метод
+    }
+
+    // отозвать старые билеты (до определённого id)
+    void Invalidate(int minimum) {
+        // реализуйте метод
+        //tickets_.pop_front();
+        for (auto it : tickets_) {
+            if (it.id < minimum) {
+                tickets_.pop_front();
+            }
+        }
+    }
+
+private:
+    int last_id_ = 0;
+    deque<Ticket> tickets_;
+};
+
+int main() {
+TicketOffice tickets;
+
+tickets.PushTicket("Swan Lake"); // id - 0
+tickets.PushTicket("Swan Lake"); // id - 1
+tickets.PushTicket("Boris Godunov"); // id - 2
+tickets.PushTicket("Boris Godunov"); // id - 3
+tickets.PushTicket("Swan Lake"); // id - 4
+tickets.PushTicket("Boris Godunov"); // id - 5
+tickets.PushTicket("Boris Godunov"); // id - 6
+
+cout << tickets.GetAvailable() << endl; // Вывод: 7
+cout << tickets.GetAvailable("Swan Lake") << endl; // Вывод: 3
+cout << tickets.GetAvailable("Boris Godunov") << endl; // Вывод: 4
+
+// Invalidate удалит билеты с номерами 0, 1, 2:
+tickets.Invalidate(3);
+
+cout << tickets.GetAvailable() << endl; // Вывод: 4
+cout << tickets.GetAvailable("Swan Lake") << endl; // Вывод: 1
+cout << tickets.GetAvailable("Boris Godunov") << endl; // Вывод: 3
+
+tickets.PushTicket("Swan Lake"); // id - 7
+tickets.PushTicket("Swan Lake"); // id - 8
+
+cout << tickets.GetAvailable("Swan Lake") << endl; // Вывод: 3
+}
+
+//////////////////////////////////////////////////////
+#include <iostream>
+
+using namespace std;
+
+template <typename F>
+int FindFloor(int n, F drop) {
+    // Переделайте этот алгоритм, имеющий линейную сложность.
+    // В итоге должен получится логарифмический алгоритм.
+    int a = 1, b = n;
+    while (a != b) {
+        int m = (a + b) / 2;
+        if (drop(m)) {
+            b = m;
+        } else {
+            a = m + 1;
+        }
+    }
+    return a;
+}
+
+int main() {
+    int n, t;
+    cout << "Enter n and target floor number: "s << endl;
+    //cin >> n >> t;
+
+    n = 256;
+    t = 129;
+    int count = 0;
+    int found = FindFloor(n, [t, &count](int f) {
+        ++count;
+        return f >= t;
+    });
+
+    cout << "Found floor "s << found << " after "s << count << " drops"s;
+
+    return 0;
+}
+
 ///////////////////////////////////////////
 #include <filesystem>
 #include <fstream>
