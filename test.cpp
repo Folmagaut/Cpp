@@ -2,6 +2,35 @@
 
 
 
+////////////////////////////////////////
+#include <cassert>
+#include <vector>
+
+template <typename T>
+void ReverseArray(T* start, size_t size) {
+    // Напишите тело функции самостоятельно
+    if (size == 0 || size == 1) {
+        return;
+    }
+
+    size_t left = 0;
+    size_t right = size - 1;
+
+    while (left < right) {
+        std::swap(start[left], start[right]);
+        ++left;
+        --right;
+    }
+}
+
+int main() {
+    using namespace std;
+    
+    vector<int> v = {1, 2};
+    ReverseArray(v.data(), v.size());
+    assert(v == (vector<int>{2, 1}));
+}
+
 /////////////////////////////////////////////////////////
 #include <algorithm>
 #include <cassert>
