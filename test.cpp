@@ -2,6 +2,198 @@
 
 
 
+///////////////////////////////////////////////////////
+#include <algorithm>
+#include <cassert>
+#include <deque>
+#include <iostream>
+#include <unordered_map>
+#include <string_view>
+#include <vector>
+
+using namespace std;
+
+class Translator {
+public:
+    Translator() = default;
+    void Add(string_view source, string_view target) {
+        words_.push_front(string{source});
+        words_.push_back(string{target});
+        target_server_[words_.back()] = words_.front();
+        source_server_[words_.front()] = words_.back();
+    }
+    string_view TranslateForward(string_view source) const {
+        auto it = source_server_.find(source);
+        return it != source_server_.end() ? it->second : "";
+    }
+    string_view TranslateBackward(string_view target) const {
+        auto it = target_server_.find(target);
+        return it != target_server_.end() ? it->second : "";
+    }
+
+private:
+    unordered_map<string_view, string_view> target_server_;
+    unordered_map<string_view, string_view> source_server_;
+    deque<string> words_;
+};
+
+void TestSimple() {
+    Translator translator;
+    translator.Add(string("okno"s), string("window"s));
+    translator.Add(string("stol"s), string("table"s));
+
+    assert(translator.TranslateForward("okno"s) == "window"s);
+    assert(translator.TranslateBackward("table"s) == "stol"s);
+    assert(translator.TranslateForward("table"s) == ""s);
+}
+
+int main() {
+    TestSimple();
+}
+
+//////////////////////////////////////
+#include <algorithm>
+#include <cassert>
+#include <iostream>
+#include <string_view>
+#include <vector>
+
+
+using namespace std;
+
+vector<string_view> SplitIntoWordsView(string_view str) {
+    vector<string_view> result;
+    str.remove_prefix(min(str.find_first_not_of(" "), str.size()));
+    
+    while (!str.empty()) {
+        // тут выполнен инвариант: str не начинается с пробела
+        int64_t space = str.find(' ');
+
+        // здесь можно избавиться от проверки на равенство npos
+        // если space == npos, метод substr ограничит возвращаемый string_view концом строки
+        result.push_back(str.substr(0, space));
+        str.remove_prefix(min(str.find_first_not_of(" ", space), str.size()));
+    }
+
+    return result;
+}
+
+int main() {
+    assert((SplitIntoWordsView("") == vector<string_view>{}));
+    assert((SplitIntoWordsView("     ") == vector<string_view>{}));
+    assert((SplitIntoWordsView("aaaaaaa") == vector{"aaaaaaa"sv}));
+    assert((SplitIntoWordsView("a") == vector{"a"sv}));
+    assert((SplitIntoWordsView("a b c") == vector{"a"sv, "b"sv, "c"sv}));
+    assert((SplitIntoWordsView("a    bbb   cc") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("  a    bbb   cc") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("a    bbb   cc   ") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("  a    bbb   cc   ") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    cout << "All OK" << endl;
+}
+
+////////////////////////////////////////
+#include <cassert>
+#include <iostream>
+#include <cstdint>
+#include <string_view>
+#include <vector>
+
+using namespace std;
+
+vector<string_view> SplitIntoWordsView(string_view str) {
+    vector<string_view> result{};
+
+    // Используем цикл для поиска пробельных символов
+    while (!str.empty()) {
+        // Находим первый непробельный символ и удаляем префикс до него
+        auto firstNonWhitespacePos = str.find_first_not_of(" ");
+        if (firstNonWhitespacePos != str.npos) {
+            str.remove_prefix(firstNonWhitespacePos);
+        } else {
+            return result;
+        }
+        // Находим первую позицию пробела
+        size_t spacePos = str.find(' ');
+        if (spacePos == str.npos) {
+            // Если нет пробела, добавляем остаток строки в результат
+            result.emplace_back(str);
+            break;
+        } else {
+            // Добавляем текущий отрезок строки в результат
+            result.emplace_back(str.substr(0, spacePos));
+            // Перемещаем начало строки после пробела
+            str.remove_prefix(spacePos + 1);
+        }
+    }
+
+    return result;
+}
+
+int main() {
+    assert((SplitIntoWordsView("") == vector<string_view>{}));
+    assert((SplitIntoWordsView("     ") == vector<string_view>{}));
+    assert((SplitIntoWordsView("aaaaaaa") == vector{"aaaaaaa"sv}));
+    assert((SplitIntoWordsView("a") == vector{"a"sv}));
+    assert((SplitIntoWordsView("a b c") == vector{"a"sv, "b"sv, "c"sv}));
+    assert((SplitIntoWordsView("a    bbb   cc") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("  a    bbb   cc") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("a    bbb   cc   ") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    assert((SplitIntoWordsView("  a    bbb   cc   ") == vector{"a"sv, "bbb"sv, "cc"sv}));
+    cout << "All OK" << endl;
+}
+
+///////////////////////////////////////////
+#include <iostream>
+#include <vector>
+#include <deque>
+#include <algorithm>
+#include <chrono>
+#include <random>
+
+using namespace std;
+
+// Функция для генерации случайного вектора или дека
+template <typename Container>
+void generateRandomData(Container& container, int size) {
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(1, 1000000);
+
+    for (int i = 0; i < size; ++i) {
+        container.push_back(dis(gen));
+    }
+}
+
+// Функция для измерения времени сортировки
+template <typename Container>
+double measureSortTime(Container& container) {
+    auto start = chrono::high_resolution_clock::now();
+    sort(container.begin(), container.end());
+    auto end = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::microseconds>(end - start);
+    return duration.count() / 1000.0; // Преобразование в миллисекунды
+}
+
+int main() {
+    const int size = 1000000;
+
+    // Генерация данных
+    vector<int> v;
+    deque<int> d;
+    generateRandomData(v, size);
+    generateRandomData(d, size);
+
+    // Сортировка вектора
+    double vectorTime = measureSortTime(v);
+    cout << "Время сортировки вектора: " << vectorTime << " мс" << endl;
+
+    // Сортировка дека
+    double dequeTime = measureSortTime(d);
+    cout << "Время сортировки дека: " << dequeTime << " мс" << endl;
+
+    return 0;
+}
+
 ////////////////////////////////////////
 #include <cassert>
 #include <vector>

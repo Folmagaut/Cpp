@@ -1,90 +1,34 @@
-#include <cassert>
-#include <cstddef>
-#include <cstdlib>
+#include "log_duration.h"
+#include <algorithm>
+#include <array>
+#include <vector>
 
-template <typename Type>
-class ArrayPtr {
-public:
-    // Инициализирует ArrayPtr нулевым указателем
-    ArrayPtr() = default;
+using namespace std;
 
-    // Создаёт в куче массив из size элементов типа Type.
-    // Если size == 0, поле raw_ptr_ должно быть равно nullptr
-    explicit ArrayPtr(size_t size) {
-        if (size == 0) {
-            raw_ptr_ = nullptr;
-        }
-        raw_ptr_ = new Type[size];
-    }
+vector<int> BuildVector(int i) {
+    return {i, i + 1, i + 2, i + 3, i + 4};
+}
 
-    // Конструктор из сырого указателя, хранящего адрес массива в куче либо nullptr
-    explicit ArrayPtr(Type* raw_ptr) noexcept : raw_ptr_(raw_ptr) {
-    }
+array<int, 5> BuildArray(int i) {
+    return {i, i + 1, i + 2, i + 3, i + 4};
+}
 
-    // Запрещаем копирование
-    ArrayPtr(const ArrayPtr&) = delete;
-
-    ~ArrayPtr() {
-        delete[] raw_ptr_;
-    }
-
-    // Запрещаем присваивание
-    ArrayPtr& operator=(const ArrayPtr&) = delete;
-
-    // Прекращает владением массивом в памяти, возвращает значение адреса массива
-    // После вызова метода указатель на массив должен обнулиться
-    [[nodiscard]] Type* Release() noexcept {
-        Type* temp = raw_ptr_;
-        raw_ptr_ = nullptr;
-        return temp;
-    }
-
-    // Возвращает ссылку на элемент массива с индексом index
-    Type& operator[](size_t index) noexcept {
-        return raw_ptr_[index];
-    }
-
-    // Возвращает константную ссылку на элемент массива с индексом index
-    const Type& operator[](size_t index) const noexcept {
-        return raw_ptr_[index];
-    }
-
-    // Возвращает true, если указатель ненулевой, и false в противном случае
-    explicit operator bool() const {
-        return raw_ptr_ != nullptr;
-    }
-
-    // Возвращает значение сырого указателя, хранящего адрес начала массива
-    Type* Get() const noexcept {
-        return raw_ptr_;
-    }
-
-    // Обменивается значениям указателя на массив с объектом other
-    void swap(ArrayPtr& other) noexcept {
-        Type* ptr = raw_ptr_;
-        raw_ptr_ = other.raw_ptr_;
-        other.raw_ptr_ = ptr;
-    }
-
-private:
-    Type* raw_ptr_ = nullptr;
-};
+const int COUNT = 1000000;
 
 int main() {
-    ArrayPtr<int> numbers(10);
-    const auto& const_numbers = numbers;
+    {
+        LOG_DURATION("vector");
+        for (int i = 0; i < COUNT; ++i) {  // C * N
+            auto numbers = BuildVector(i);
+        }
+    }
+    {
+        LOG_DURATION("array");
+        for (int i = 0; i < COUNT; ++i) {  // C * N * logN
+            auto numbers = BuildArray(i);
+            sort(begin(numbers), end(numbers));
+        }
+    }
 
-    numbers[2] = 42;
-    assert(const_numbers[2] == 42);
-    assert(&const_numbers[2] == &numbers[2]);
-
-    assert(numbers.Get() == &numbers[0]);
-
-    ArrayPtr<int> numbers_2(5);
-    numbers_2[2] = 43;
-
-    numbers.swap(numbers_2);
-
-    assert(numbers_2[2] == 42);
-    assert(numbers[2] == 43);
+    return 0;
 }
