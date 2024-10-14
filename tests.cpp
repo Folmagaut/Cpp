@@ -1,72 +1,129 @@
-#include <algorithm>
+#pragma once
+
 #include <cassert>
-#include <filesystem>
-#include <fstream>
 #include <iostream>
-#include <sstream>
+#include <stdexcept>
 #include <string>
-#include <vector>
 
 using namespace std;
-using filesystem::path;
 
-path operator""_p(const char* data, std::size_t sz) {
-    return path(data, data + sz);
-}
+template <typename T>
+class ScopedPtr {
+public:
+    ScopedPtr() = default;
 
-void PrintTree(ostream& dst, const path& p, int offset) {
-    error_code err;
-    auto status = filesystem::status(p, err);
-    offset += 2;
-    vector<string> elements;
-    if (status.type() == filesystem::file_type::directory) {
-        for (const auto& dir_entry: filesystem::directory_iterator(p)) {
-        elements.push_back(dir_entry.path().filename().string());
-        }
+    explicit ScopedPtr(T* raw_ptr) noexcept : ptr_(raw_ptr) {
     }
-    sort(elements.begin(), elements.end(), [] (string lhs, string rhs) {
-        return lhs > rhs;
-    });
 
-    for (const auto& s : elements) {
-        path pth(p / s);
-        auto status = filesystem::status(pth, err);
-        if (status.type() == filesystem::file_type::directory) {
-            dst << string(offset, ' ') << s << endl;
-            PrintTree(dst, pth, offset);
-        }
-        else {
-            dst << string(offset, ' ') << s << endl;
-        }
+    ScopedPtr(const ScopedPtr&) = delete;
+
+    ~ScopedPtr() {
+        delete ptr_;
     }
-}
 
-// напишите эту функцию
-void PrintTree(ostream& dst, const path& p) {
-    dst << p.string() << endl;
-    int offset = 0;
-    PrintTree(dst, p, offset);
-}
+    T* GetRawPtr() const noexcept {
+        return ptr_;
+    }
 
-int main() {
-    error_code err;
-    filesystem::remove_all("test_dir", err);
-    filesystem::create_directories("test_dir"_p / "a"_p, err);
-    filesystem::create_directories("test_dir"_p / "b"_p, err);
+    T* Release() noexcept {
+        T* ret_ptr = ptr_;
+        ptr_ = nullptr;
+        return ret_ptr;
+    }
 
-    ofstream("test_dir"_p / "b"_p / "f1.txt"_p);
-    ofstream("test_dir"_p / "b"_p / "f2.txt"_p);
-    ofstream("test_dir"_p / "a"_p / "f3.txt"_p);
+    explicit operator bool() const noexcept {
+        return ptr_ != nullptr;
+    }
 
-    ostringstream out;
-    PrintTree(out, "test_dir"_p);
-    cout << out.str();
-    /* assert(out.str() ==
-        "test_dir\n"
-        "  b\n"
-        "    f2.txt\n"
-        "    f1.txt\n"
-        "  a\n"
-        "    f3.txt\n"s
-    ); */
-}
+    T& operator*() const {
+        if (!ptr_) {
+            throw logic_error("Error: ptr_ is null"s);
+        }
+        return *ptr_;
+    }
+
+    T* operator->() const {
+        if (!ptr_) {
+            throw logic_error("Error: ptr_ is null"s);
+        }
+        return ptr_;
+    }
+
+private:
+    T* ptr_ = nullptr;
+};
+
+/*
+#pragma once
+
+#include <cassert>
+#include <cstdlib>
+#include <algorithm>
+
+template <typename Type>
+class ArrayPtr {
+public:
+    // Инициализирует ArrayPtr нулевым указателем
+    ArrayPtr() = default;
+
+    // Создаёт в куче массив из size элементов типа Type.
+    // Если size == 0, поле raw_ptr_ должно быть равно nullptr
+    explicit ArrayPtr(size_t size) {
+        if (size == 0) raw_ptr_ = nullptr;
+        else raw_ptr_ = new Type[size];
+    }
+
+    // Конструктор из сырого указателя, хранящего адрес массива в куче либо nullptr
+    explicit ArrayPtr(Type* raw_ptr) noexcept
+        : raw_ptr_(raw_ptr)
+    {
+    }
+
+    // Запрещаем копирование
+    ArrayPtr(const ArrayPtr&) = delete;
+
+    ~ArrayPtr() {
+        delete[] raw_ptr_;
+    }
+
+    // Запрещаем присваивание
+    ArrayPtr& operator=(const ArrayPtr&) = delete;
+
+    // Прекращает владением массивом в памяти, возвращает значение адреса массива
+    // После вызова метода указатель на массив должен обнулиться
+    [[nodiscard]] Type* Release() noexcept {
+        Type* tmp = raw_ptr_;
+        raw_ptr_ = nullptr;
+        return tmp;
+    }
+
+    // Возвращает ссылку на элемент массива с индексом index
+    Type& operator[](size_t index) noexcept {
+        return raw_ptr_[index];
+    }
+
+    // Возвращает константную ссылку на элемент массива с индексом index
+    const Type& operator[](size_t index) const noexcept {
+        return raw_ptr_[index];
+    }
+
+    // Возвращает true, если указатель ненулевой, и false в противном случае
+    explicit operator bool() const {
+        if (raw_ptr_) return true;
+        return false;
+    }
+
+    // Возвращает значение сырого указателя, хранящего адрес начала массива
+    Type* Get() const noexcept {
+        return &raw_ptr_[0];
+    }
+
+    // Обменивается значениям указателя на массив с объектом other
+    void swap(ArrayPtr& other) noexcept {
+        std::swap(other.raw_ptr_, raw_ptr_);
+    }
+
+private:
+    Type* raw_ptr_ = nullptr;
+};
+*/
