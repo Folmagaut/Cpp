@@ -2,6 +2,82 @@
 
 
 
+///////////////////////////////
+#include <cassert>
+#include <cstdint>
+#include <iostream>
+#include <deque>
+#include <numeric>
+#include <vector>
+#include <utility>
+
+using namespace std;
+
+class Rabbit {
+public:
+    enum class Color { WHITE, BLACK, INVISIBLE };
+
+    Rabbit(Color color)
+        : color_(color) 
+    {
+    }
+    // копирование кроликов, как и слонов, в природе не предусмотрено
+    Rabbit(const Rabbit& other) = delete;
+    Rabbit& operator=(const Rabbit& other) = delete;
+
+    //Rabbit(Rabbit&& other) = default;
+    //Rabbit& operator=(Rabbit&& other) = default;
+    Rabbit(Rabbit&& other) {
+    color_ = exchange(other.color_, Color::INVISIBLE);
+}
+
+Rabbit& operator=(Rabbit&& other) {
+    color_ = exchange(other.color_, Color::INVISIBLE);
+    return *this;
+}
+
+    Color GetColor() const {
+        return color_;
+    }
+
+private:
+    Color color_;
+};
+
+class Hat {
+public:
+    Hat(Rabbit&& rabbit)
+        : rabbit_(move(rabbit)) 
+    {
+    }
+    // не стоит копировать шляпу
+    Hat(const Hat& other) = delete;
+    Hat& operator=(const Hat& other) = delete;
+    // но вот переместить шляпу можно
+    Hat(Hat&& other) = default;
+    Hat& operator=(Hat&&) = default;
+    // в любой момент можно посмотреть, есть ли кролик в шляпе
+    const Rabbit& GetRabbit() const {
+        return rabbit_;
+    }
+private:
+    Rabbit rabbit_;
+};
+
+int main() {
+    Hat magic_hat(Rabbit(Rabbit::Color::WHITE));
+    Hat other_magic_hat(move(magic_hat));
+    if (magic_hat.GetRabbit().GetColor() == Rabbit::Color::WHITE) {
+        cout << "Кролик перемещён, но его цвет белый"s << endl;
+    }
+    else if (magic_hat.GetRabbit().GetColor() == Rabbit::Color::BLACK) {
+        cout << "Кролик перемещён, но его цвет чёрный"s << endl;
+    }
+    else {
+        cout << "Кажется, мы не уверены на счёт цвета кролика"s << endl;
+    }
+}
+
 ///////////////////////////////////////////////////////
 #include <algorithm>
 #include <cassert>

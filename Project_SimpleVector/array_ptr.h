@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <string>
 
@@ -34,6 +35,12 @@ public:
 
     // Удаляем у класса конструктор копирования
     ScopedPtr(const ScopedPtr&) = delete;
+
+    // конструктор для move
+    ScopedPtr (ScopedPtr&& other) noexcept 
+        : ptr_(other.ptr_) { 
+        other.ptr_ = nullptr; 
+    }
 
     // Деструктор. Удаляет объект, на который ссылается умный указатель.
     ~ScopedPtr() {
@@ -77,6 +84,7 @@ public:
         return ptr_;
     }
 
+    // операторы для индекса
     Type& operator[](size_t index) noexcept {
         return ptr_[index];
     }
@@ -85,6 +93,7 @@ public:
         return ptr_[index];
     }
 
+    // самый лучший метод
     void swap(ScopedPtr& other) noexcept {
         std::swap(other.ptr_, ptr_);
     }
