@@ -25,28 +25,28 @@ private:
 template <typename Type>
 class SimpleVector {
 public:
-    using DEFAULT_VALUE = Type;
+    using Default_value = Type;
     using Iterator = Type*;
     using ConstIterator = const Type*;
 
     SimpleVector() noexcept = default;
 
     // Создаёт вектор из size элементов, инициализированных значением по умолчанию
-    explicit SimpleVector(size_t size)
-        : SimpleVector(size, DEFAULT_VALUE()) {
+    explicit SimpleVector(size_t size)              // не понял, это отлично или надо что-то поправить? :)
+        : SimpleVector(size, Default_value()) {
     }
 
     // Создаёт вектор из size элементов, инициализированных значением value
     SimpleVector(size_t size, const Type& value)
-        : simp_vec_start_ptr_(new Type[size]),
-        size_(size),
-        capacity_(size) {
+        : simp_vec_start_ptr_(size),                // исправил
+        size_(size),                                // размер и вместимость иницилизированы через список инициализации,
+        capacity_(size) {                           // как и полагается
         std::fill_n(simp_vec_start_ptr_.GetRawPtr(), size, value); // почитать
     }
 
     // Создаёт вектор из std::initializer_list
     SimpleVector(std::initializer_list<Type> init)
-        : simp_vec_start_ptr_(new Type[init.size()]),
+        : simp_vec_start_ptr_(init.size()),         // исправил
         size_(init.size()),
         capacity_(init.size()) {
         std::copy(init.begin(), init.end(), simp_vec_start_ptr_.GetRawPtr());
@@ -54,7 +54,7 @@ public:
 
     // конструктор копирования
     SimpleVector(const SimpleVector& other)
-        : simp_vec_start_ptr_(other.capacity_),
+        : simp_vec_start_ptr_(other.capacity_),     // тут всё нормально
         size_(other.size_),
         capacity_(other.capacity_) {
         std::copy(other.begin(), other.end(), simp_vec_start_ptr_.GetRawPtr());
@@ -62,20 +62,20 @@ public:
     
     // конструктор через reserve
     SimpleVector(ReserveProxyObj obj)
-        : simp_vec_start_ptr_(obj.GetCapacity()),
+        : simp_vec_start_ptr_(obj.GetCapacity()),   // тут тоже
         size_(0),
         capacity_(obj.GetCapacity()) {
     }
 
     // конструктор перемещения для move
     SimpleVector(SimpleVector&& other)
-        : simp_vec_start_ptr_(std::move(other.simp_vec_start_ptr_)),
+        : simp_vec_start_ptr_(std::move(other.simp_vec_start_ptr_)), // этот конструктор в array_ptr есть
         size_(std::exchange(other.size_, 0)),
         capacity_(std::exchange(other.capacity_, 0)) {
     }
 
     // конструктор присваивания
-    SimpleVector& operator=(const SimpleVector& rhs) {
+    SimpleVector& operator=(const SimpleVector& rhs) { // тут, вроде, нормально
         if (this != &rhs) {
             SimpleVector tmp(rhs);
             swap(tmp);
@@ -86,7 +86,7 @@ public:
     // конструктор присваивания для move
     SimpleVector& operator=(SimpleVector&& rhs) {
         if (this != &rhs) {
-            simp_vec_start_ptr_.swap(rhs.simp_vec_start_ptr_); // подумать через move
+            simp_vec_start_ptr_.swap(rhs.simp_vec_start_ptr_); // нормально
             size_ = std::exchange(rhs.size_, 0);
             capacity_ = std::exchange(rhs.capacity_, 0);
         }
@@ -162,7 +162,7 @@ public:
     void Resize(size_t new_size) {
         if (new_size <= capacity_) {
             for (size_t index = size_; index < new_size; ++index) {
-                simp_vec_start_ptr_[index] = DEFAULT_VALUE();
+                simp_vec_start_ptr_[index] = Default_value();
             }
         } else {
             size_t new_capacity = std::max(new_size, capacity_ * 2);
@@ -172,7 +172,7 @@ public:
                 std::move(begin(), end(), tmp.GetRawPtr());
             }
             for (size_t index = size_; index < new_size; ++index) {
-                tmp[index] = DEFAULT_VALUE();
+                tmp[index] = Default_value();
             }
             simp_vec_start_ptr_.swap(tmp);
             capacity_ = new_capacity;
@@ -237,9 +237,8 @@ public:
 
     // "Удаляет" последний элемент вектора. Вектор не должен быть пустым
     void PopBack() noexcept {
-        if (size_ > 0) {
-            --size_;
-        }
+        assert (size_ > 0);             // исправил
+        --size_;
     }
 
     // Удаляет элемент вектора в указанной позиции

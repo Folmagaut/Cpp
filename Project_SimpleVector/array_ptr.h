@@ -21,7 +21,8 @@ public:
     // raw_ptr ссылается либо на объект, созданный в куче при помощи new,
     // либо является нулевым указателем
     // Спецификатор noexcept обозначает, что метод не бросает исключений
-    explicit ScopedPtr(Type* raw_ptr) noexcept : ptr_(raw_ptr) {
+    explicit ScopedPtr(Type* raw_ptr) noexcept
+    : ptr_(raw_ptr) {
     }
 
     // указатель на новый массив
@@ -33,13 +34,21 @@ public:
         }
     }
 
-    // Удаляем у класса конструктор копирования
+    // Удаляем у класса конструктор копирования и оператор присваивания
     ScopedPtr(const ScopedPtr&) = delete;
+    ScopedPtr& operator=(const ScopedPtr&) = delete;
 
     // конструктор для move
     ScopedPtr (ScopedPtr&& other) noexcept 
         : ptr_(other.ptr_) { 
         other.ptr_ = nullptr; 
+    }
+    // добавил присваивание при перемещении
+    ScopedPtr& operator=(ScopedPtr&& other) noexcept { 
+        if (this != &other) { 
+            swap(other); 
+        } 
+        return *this; 
     }
 
     // Деструктор. Удаляет объект, на который ссылается умный указатель.
