@@ -2,6 +2,775 @@
 
 
 
+///////////////////////////////////////////////////
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+struct Circle {
+    double x;
+    double y;
+    double r;
+};
+
+struct Dumbbell {
+    Circle circle1;
+    Circle circle2;
+    string text;
+};
+
+struct DumbbellHash {
+// реализуйте хешер для Dumbbell
+    size_t operator()(const Dumbbell& dumbbell) const {
+        // Используем комбинацию из всех полей, чтобы получить более равномерное распределение
+        // Применяем простые арифметические операции и битовые сдвиги для эффективного смешивания
+        size_t x1 = double_hasher_(dumbbell.circle1.x);
+        size_t y1 = double_hasher_(dumbbell.circle1.y);
+        size_t r1 = double_hasher_(dumbbell.circle1.r);
+        size_t hash_circle1 = x1 + y1 * 31 + r1 * 31 * 31;
+        
+        size_t x2 = double_hasher_(dumbbell.circle2.x);
+        size_t y2 = double_hasher_(dumbbell.circle2.y);
+        size_t r2 = double_hasher_(dumbbell.circle2.r);
+        size_t hash_circle2 = x2 + y2 * 31 + r2 * 31 * 31;
+        
+        size_t hash_text = string_hasher_(dumbbell.text);
+        
+        return (hash_circle1 * 31 * 31 * 31 * 31 + hash_circle2 * 31 + hash_text);
+    }
+private:
+    hash<double> double_hasher_;
+    hash<string> string_hasher_;
+};
+
+int main() {
+    DumbbellHash hash;
+    Dumbbell dumbbell{{10, 11.5, 2.3}, {3.14, 15, -8}, "abc"s};
+    cout << "Dumbbell hash "s << hash(dumbbell);
+}
+
+//////////////////////////////////////////////////////////
+#include <iostream>
+#include <string>
+#include <sstream>
+#include <unordered_map>
+#include <unordered_set>
+
+using namespace std;
+
+template <typename Hash>
+int FindCollisions(const Hash& hasher, istream& text) {
+    // место для вашей реализации
+    size_t counter = 0;
+    string word;
+    unordered_map<size_t, unordered_set<string>> hash_word_collision_counter;
+    while (text >> word) {
+        size_t hs = hasher(word);
+        bool is_collide = hash_word_collision_counter[hs].insert(move(word)).second;
+        if (is_collide && hash_word_collision_counter.at(hs).size() > 1) {
+            ++counter;
+        }
+    }
+    return counter;
+}
+
+// Это плохой хешер. Его можно использовать для тестирования.
+// Подумайте, в чём его недостаток
+struct HasherDummy {
+    size_t operator() (const string& str) const {
+        size_t res = 0;
+        for (char c : str) {
+            res += static_cast<size_t>(c);
+        }
+        return res;
+    }
+};
+
+struct DummyHash {
+    size_t operator()(const string&) const {
+        return 42;
+    }
+};
+
+int main() {
+    DummyHash dummy_hash;
+    hash<string> good_hash;
+    //HasherDummy h_d;
+
+    {
+        istringstream stream("I love C++"s);
+        cout << FindCollisions(dummy_hash, stream) << endl;
+    }
+    {
+        istringstream stream("I love C++"s);
+        cout << FindCollisions(good_hash, stream) << endl;
+    }
+} 
+
+///////////////////////////////////////////////////////////////////
+#include "log_duration.h"
+
+#include <algorithm>
+#include <array>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <random>
+#include <set>
+#include <string>
+#include <sstream>
+#include <unordered_set>
+
+using namespace std;
+
+class VehiclePlate {
+private:
+    auto AsTuple() const {
+        return tie(letters_, digits_, region_);
+    }
+
+public:
+    bool operator==(const VehiclePlate& other) const {
+        return AsTuple() == other.AsTuple();
+    }
+
+    bool operator<(const VehiclePlate& other) const {
+        return AsTuple() < other.AsTuple();
+    }
+
+    VehiclePlate(char l0, char l1, int digits, char l2, int region)
+        : letters_{l0, l1, l2}
+        , digits_(digits)
+        , region_(region) {
+    }
+
+    string ToString() const {
+        ostringstream out;
+        out << letters_[0] << letters_[1];
+        out << setfill('0') << right << setw(3) << digits_;
+        out << letters_[2] << setw(2) << region_;
+
+        return out.str();
+    }
+
+    const array<char, 3>& GetLetters() const {
+        return letters_;
+    }
+
+    int GetDigits() const {
+        return digits_;
+    }
+
+    int GetRegion() const {
+        return region_;
+    }
+
+private:
+    array<char, 3> letters_;
+    int digits_;
+    int region_;
+};
+
+struct PlateHasherTrivial {
+    size_t operator()(const VehiclePlate& plate) const {
+        return static_cast<size_t>(plate.GetDigits());
+    }
+};
+
+struct PlateHasherRegion {
+    size_t operator()(const VehiclePlate& plate) const {
+        return static_cast<size_t>(plate.GetDigits() + plate.GetRegion() * 1000);
+    }
+};
+
+struct PlateHasherString {
+    size_t operator()(const VehiclePlate& plate) const {
+        return hasher_(plate.ToString());
+    }
+private:
+    hash<string> hasher_;
+};
+
+struct PlateHasherAll {
+    // реализуйте собственный хешер, который будет
+    // эффективнее и лучше всех остальных
+    size_t operator()(const VehiclePlate& plate) const {
+        // Используем комбинацию из всех полей, чтобы получить более равномерное распределение
+        // Применяем простые арифметические операции и битовые сдвиги для эффективного смешивания
+        size_t hash = 0;
+        hash = hash * 31 + std::hash<char>{}(plate.GetLetters()[0]);
+        hash = hash * 31 + std::hash<char>{}(plate.GetLetters()[1]);
+        hash = hash * 31 + std::hash<char>{}(plate.GetLetters()[2]);
+        hash = hash * 31 + plate.GetDigits();
+        hash = hash * 31 + plate.GetRegion();
+        return hash;
+    }
+};
+
+ostream& operator<<(ostream& out, VehiclePlate plate) {
+    out << plate.ToString();
+    return out;
+}
+
+class PlateGenerator {
+    char GenerateChar() {
+        uniform_int_distribution<short> char_gen{0, static_cast<short>(possible_chars_.size() - 1)};
+        return possible_chars_[char_gen(engine_)];
+    }
+
+    int GenerateNumber() {
+        uniform_int_distribution<short> num_gen{0, 999};
+        return num_gen(engine_);
+    }
+
+    int GenerateRegion() {
+        uniform_int_distribution<short> region_gen{0, static_cast<short>(possible_regions_.size() - 1)};
+        return possible_regions_[region_gen(engine_)];
+    }
+
+public:
+    VehiclePlate Generate() {
+        return VehiclePlate(GenerateChar(), GenerateChar(), GenerateNumber(), GenerateChar(), GenerateRegion());
+    }
+
+private:
+    mt19937 engine_;
+
+    // допустимые значения сохраним в static переменных
+    // они объявлены inline, чтобы их определение не надо было выносить вне класса
+    inline static const array possible_regions_
+        = {1,  2,  102, 3,   4,   5,   6,   7,   8,  9,   10,  11,  12, 13,  113, 14,  15, 16,  116, 17, 18,
+           19, 20, 21,  121, 22,  23,  93,  123, 24, 84,  88,  124, 25, 125, 26,  27,  28, 29,  30,  31, 32,
+           33, 34, 35,  36,  136, 37,  38,  85,  39, 91,  40,  41,  82, 42,  142, 43,  44, 45,  46,  47, 48,
+           49, 50, 90,  150, 190, 51,  52,  152, 53, 54,  154, 55,  56, 57,  58,  59,  81, 159, 60,  61, 161,
+           62, 63, 163, 64,  164, 65,  66,  96,  67, 68,  69,  70,  71, 72,  73,  173, 74, 174, 75,  80, 76,
+           77, 97, 99,  177, 199, 197, 777, 78,  98, 178, 79,  83,  86, 87,  89,  94,  95};
+
+    // постфикс s у литерала тут недопустим, он приведёт к неопределённому поведению
+    inline static const string_view possible_chars_ = "ABCEHKMNOPTXY"sv;
+};
+
+int main() {
+    static const int N = 1'000'000;
+
+    PlateGenerator generator;
+    vector<VehiclePlate> fill_vector;
+    vector<VehiclePlate> find_vector;
+
+    generate_n(back_inserter(fill_vector), N, [&]() {
+        return generator.Generate();
+    });
+    generate_n(back_inserter(find_vector), N, [&]() {
+        return generator.Generate();
+    });
+
+    int found;
+    {
+        LOG_DURATION("unordered_set");
+        unordered_set<VehiclePlate, PlateHasherAll> container;
+        for (auto& p : fill_vector) {
+            container.insert(p);
+        }
+        found = count_if(find_vector.begin(), find_vector.end(), [&](const VehiclePlate& plate) {
+            return container.count(plate) > 0;
+        });
+    }
+    cout << "Found matches (1): "s << found << endl;
+
+    {
+        LOG_DURATION("set");
+        set<VehiclePlate> container;
+        for (auto& p : fill_vector) {
+            container.insert(p);
+        }
+        found = count_if(find_vector.begin(), find_vector.end(), [&](const VehiclePlate& plate) {
+            return container.count(plate) > 0;
+        });
+    }
+    cout << "Found matches (2): "s << found << endl;
+}
+
+//////////////////////////////////////////////////
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <cstdint>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
+
+using namespace std;
+
+class VehiclePlate {
+private:
+    auto AsTuple() const {
+        return tie(letters_, digits_, region_);
+    }
+
+public:
+    bool operator==(const VehiclePlate& other) const {
+        return AsTuple() == other.AsTuple();
+    }
+
+    VehiclePlate(char l0, char l1, int digits, char l2, int region)
+        : letters_{l0, l1, l2}
+        , digits_(digits)
+        , region_(region) {
+    }
+
+    string ToString() const {
+        ostringstream out;
+        out << letters_[0] << letters_[1];
+
+        // чтобы дополнить цифровую часть номера слева нулями
+        // до трёх цифр, используем подобные манипуляторы:
+        // setfill задаёт символ для заполнения,
+        // right задаёт выравнивание по правому краю,
+        // setw задаёт минимальное желаемое количество знаков
+        out << setfill('0') << right << setw(3) << digits_;
+        out << letters_[2] << setw(2) << region_;
+
+        return out.str();
+    }
+
+    int Hash() const {
+        return digits_;
+    }
+
+private:
+    array<char, 3> letters_;
+    int digits_;
+    int region_;
+};
+
+ostream& operator<<(ostream& out, VehiclePlate plate) {
+    out << plate.ToString();
+    return out;
+}
+
+class ParkingCounter {
+public:
+    // зарегистрировать парковку автомобиля
+    void Park(VehiclePlate car) {
+        // место для вашей реализации
+        ++car_to_parks_[car];
+    }
+
+    // метод возвращает количество зарегистрированных 
+    // парковок автомобиля
+    int GetCount(const VehiclePlate& car) const {
+        // место для вашей реализации
+        auto car_park_counter = car_to_parks_.find(car);
+        if (car_park_counter == car_to_parks_.end()) {
+            return 0;
+        }
+        return car_to_parks_.at(car);
+    }
+
+    auto& GetAllData() const {
+        return car_to_parks_;
+    }
+
+private:
+    // для хранения данных используйте контейнер unordered_map
+    // назовите поле класса car_to_parks_
+    unordered_map<VehiclePlate, int, VehiclePlateHasher> car_to_parks_;
+};
+
+class VehiclePlateHasher {
+public:
+    size_t operator()(const VehiclePlate& plate) const {
+        // измените эту функцию, чтобы она учитывала все данные номера
+        // рекомендуется использовать метод ToString() и существующий 
+        // класс hash<string>
+        string plate_string = plate.ToString();
+        return static_cast<size_t>(plate_hash_(plate_string));
+    }
+private:
+    hash<string> plate_hash_; 
+};
+// выбросьте это исключение в случае ошибки парковки
+struct ParkingException {};
+
+template <typename Clock>
+class Parking {
+    // при обращении к типу внутри шаблонного параметра мы обязаны использовать 
+    // typename; чтобы этого избежать, объявим псевдонимы для нужных типов
+    using Duration = typename Clock::duration;
+    using TimePoint = typename Clock::time_point;
+
+public:
+    Parking(int cost_per_second) : cost_per_second_(cost_per_second) {}
+
+    // запарковать машину с указанным номером
+    void Park(VehiclePlate car) {
+        // место для вашей реализации
+        if (now_parked_.find(car) != now_parked_.end()) {
+            throw ParkingException();
+        }
+        TimePoint start_time = Clock::now();
+        now_parked_[car] = start_time;
+    }
+
+    // забрать машину с указанным номером
+    void Withdraw(const VehiclePlate& car) {
+        // место для вашей реализации
+        if (now_parked_.find(car) == now_parked_.end()) {
+            throw ParkingException();
+        }
+        TimePoint stop_time = Clock::now();
+        Duration duration = stop_time - now_parked_.at(car); // start_time;
+        complete_parks_[car] += duration;
+        now_parked_.erase(car);
+    }
+
+    // получить счёт за конкретный автомобиль
+    int64_t GetCurrentBill(const VehiclePlate& car) const {
+        // место для вашей реализации
+        int64_t cost = 0;
+        if (complete_parks_.count(car)) {
+            cost += chrono::duration_cast<chrono::seconds>(complete_parks_.at(car)).count() * cost_per_second_;
+        }
+        if (now_parked_.count(car)) {
+            TimePoint current_time = Clock::now();
+            cost += chrono::duration_cast<chrono::seconds>(current_time - now_parked_.at(car)).count() * cost_per_second_;
+        }
+        return cost;
+    }
+
+    // завершить расчётный период
+    // те машины, которые находятся на парковке на данный момент, должны 
+    // остаться на парковке, но отсчёт времени для них начинается с нуля
+    unordered_map<VehiclePlate, int64_t, VehiclePlateHasher> EndPeriodAndGetBills() {
+        // место для вашей реализации
+        unordered_map<VehiclePlate, int64_t, VehiclePlateHasher> complete_car_bills;
+        for (const auto& [car, time_n] : complete_parks_) {
+            complete_car_bills[car] = 0;
+        }
+        for (const auto& [car, time_n] : now_parked_) {
+            complete_car_bills[car] = 0;
+        }
+        for (auto& [car, time_n] : complete_car_bills) {
+            complete_car_bills[car] += GetCurrentBill(car);
+        }
+        for (auto [car, time_n] : now_parked_) {
+            now_parked_[car] = Clock::now();
+        }
+        complete_parks_.clear();
+        return complete_car_bills;
+    }
+
+    // не меняйте этот метод
+    auto& GetNowParked() const {
+        return now_parked_;
+    }
+
+    // не меняйте этот метод
+    auto& GetCompleteParks() const {
+        return complete_parks_;
+    }
+
+private:
+    int cost_per_second_;
+    unordered_map<VehiclePlate, TimePoint, VehiclePlateHasher> now_parked_;
+    unordered_map<VehiclePlate, Duration, VehiclePlateHasher> complete_parks_;
+};
+
+// эти часы удобно использовать для тестирования
+// они покажут столько времени, сколько вы задали явно
+class TestClock {
+public:
+    using time_point = chrono::system_clock::time_point;
+    using duration = chrono::system_clock::duration;
+
+    static void SetNow(int seconds) {
+        current_time_ = seconds;
+    }
+
+    static time_point now() {
+        return start_point_ + chrono::seconds(current_time_);
+    }
+
+private:
+    inline static time_point start_point_ = chrono::system_clock::now();
+    inline static int current_time_ = 0;
+};
+
+int main() {
+    Parking<TestClock> parking(10);
+
+    TestClock::SetNow(10);
+    parking.Park({'A', 'A', 111, 'A', 99});
+
+    TestClock::SetNow(20);
+    parking.Withdraw({'A', 'A', 111, 'A', 99});
+    parking.Park({'B', 'B', 222, 'B', 99});
+
+    TestClock::SetNow(40);
+    assert(parking.GetCurrentBill({'A', 'A', 111, 'A', 99}) == 100);
+    assert(parking.GetCurrentBill({'B', 'B', 222, 'B', 99}) == 200);
+    parking.Park({'A', 'A', 111, 'A', 99});
+
+    TestClock::SetNow(50);
+    assert(parking.GetCurrentBill({'A', 'A', 111, 'A', 99}) == 200);
+    assert(parking.GetCurrentBill({'B', 'B', 222, 'B', 99}) == 300);
+    assert(parking.GetCurrentBill({'C', 'C', 333, 'C', 99}) == 0);
+    parking.Withdraw({'B', 'B', 222, 'B', 99});
+
+    TestClock::SetNow(70);
+    {
+        // проверим счёт
+        auto bill = parking.EndPeriodAndGetBills();
+
+        // так как внутри макроса используется запятая,
+        // нужно заключить его аргумент в дополнительные скобки
+        assert((bill
+                == unordered_map<VehiclePlate, int64_t, VehiclePlateHasher>{
+                   {{'A', 'A', 111, 'A', 99}, 400},
+                   {{'B', 'B', 222, 'B', 99}, 300},
+               }));
+    }
+
+    TestClock::SetNow(80);
+    {
+        // проверим счёт
+        auto bill = parking.EndPeriodAndGetBills();
+
+        // так как внутри макроса используется запятая,
+        // нужно заключить его аргумент в дополнительные скобки
+        assert((bill
+                == unordered_map<VehiclePlate, int64_t, VehiclePlateHasher>{
+                   {{'A', 'A', 111, 'A', 99}, 100},
+               }));
+    }
+
+    try {
+        parking.Park({'A', 'A', 111, 'A', 99});
+        assert(false);
+    }
+    catch (ParkingException) {
+    }
+
+    try {
+        parking.Withdraw({'B', 'B', 222, 'B', 99});
+        assert(false);
+    }
+    catch (ParkingException) {
+    }
+
+    cout << "Success!"s << endl;
+}
+
+////////////////////////////////////////////////
+#include <array>
+#include <iomanip>
+#include <iostream>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <unordered_set>
+#include <tuple>
+
+using namespace std;
+
+class VehiclePlate {
+private:
+    auto AsTuple() const {
+        return tie(letters_, digits_, region_);
+    }
+public:
+    VehiclePlate(char l0, char l1, int digits, char l2, int region)
+        : letters_{l0, l1, l2}
+        , digits_(digits)
+        , region_(region) {
+    }
+
+    string ToString() const {
+        ostringstream out;
+        out << letters_[0] << letters_[1];
+        // чтобы дополнить цифровую часть номера слева нулями
+        // до трёх цифр, используем подобные манипуляторы:
+        // setfill задаёт символ для заполнения,
+        // right задаёт выравнивание по правому краю,
+        // setw задаёт минимальное желаемое количество знаков
+        out << setfill('0') << right << setw(3) << digits_;
+        out << letters_[2] << setw(2) << region_;
+
+        return out.str();
+    }
+
+    int Hash() const {
+        return digits_;
+    }
+
+    //[[nodiscard]] bool operator==(const VehiclePlate& rhs) const noexcept {
+    //    return letters_ == rhs.letters_ && digits_ == rhs.digits_ && region_ == rhs.region_;
+    //}
+    bool operator==(const VehiclePlate& other) const {
+        return AsTuple() == other.AsTuple();
+    }
+
+private:
+    array<char, 3> letters_;
+    int digits_;
+    int region_;
+};
+
+ostream& operator<<(ostream& out, VehiclePlate plate) {
+    out << plate.ToString();
+    return out;
+}
+
+template <typename T>
+class HashableContainer {
+public:
+    void Insert(T elem) {
+        int index = elem.Hash();
+
+        // если вектор недостаточно велик для этого индекса,
+        // то увеличим его, выделив место с запасом
+        if (index >= int(elements_.size())) {
+            elements_.resize(index * 2 + 1);
+        }
+    
+        for (auto& e : elements_[index]) {
+            if (e == elem) {
+                return;
+            }
+        }
+        elements_[index].push_back(move(elem));
+    }
+
+    void PrintAll(ostream& out) const {
+        for (auto& e : elements_) {
+            if (e.empty()) {
+                continue;
+            }
+            for (auto& e_in : e) {
+                out << e_in << endl;
+            }
+        }
+    }
+
+    const auto& GetVector() const {
+        return elements_;
+    }
+
+private:
+    vector<vector<T>> elements_;
+};
+
+class VehiclePlateHasher {
+public:
+    size_t operator()(const VehiclePlate& plate) const {
+        return static_cast<size_t>(plate.Hash());
+    }
+};
+
+int main() {
+    // явно указываем хешер шаблонным параметром
+    unordered_set<VehiclePlate, VehiclePlateHasher> plate_base;
+
+    plate_base.insert({'B', 'H', 840, 'E', 99});
+    plate_base.insert({'O', 'K', 942, 'K', 78});
+    plate_base.insert({'O', 'K', 942, 'K', 78});
+    plate_base.insert({'O', 'K', 942, 'K', 78});
+    plate_base.insert({'O', 'K', 942, 'K', 78});
+    plate_base.insert({'H', 'E', 968, 'C', 79});
+    plate_base.insert({'T', 'A', 326, 'X', 83});
+    plate_base.insert({'H', 'H', 831, 'P', 116});
+    plate_base.insert({'A', 'P', 831, 'Y', 99});
+    plate_base.insert({'P', 'M', 884, 'K', 23});
+    plate_base.insert({'O', 'C', 34, 'P', 24});
+    plate_base.insert({'M', 'Y', 831, 'M', 43});
+    plate_base.insert({'B', 'P', 831, 'M', 79});
+    plate_base.insert({'K', 'T', 478, 'P', 49});
+    plate_base.insert({'X', 'P', 850, 'A', 50});
+
+    for (auto& plate : plate_base) {
+        cout << plate << endl;
+    }
+
+}
+
+//////////////////////////////////////////////
+//#include <algorithm>
+//#include <cassert>
+#include <cstdint>
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+class MoneyBox {
+public:
+    explicit MoneyBox(vector<int64_t> nominals)
+        : nominals_(move(nominals))
+        , counts_(nominals_.size()) {
+    }
+
+    const vector<int>& GetCounts() const {
+        return counts_;
+    }
+
+    void PushCoin(int64_t value) {
+        // реализуйте метод добавления купюры или монеты
+        //int dist = GetIndex(value);
+        //assert(dist < int(nominals_.size()));
+        int64_t dist = 0;
+        while (nominals_[dist] != value) {
+            ++dist;
+        }
+        ++counts_[dist];
+    }
+
+    void PrintCoins(ostream& out) const {
+        // реализуйте метод печати доступных средств
+        for (size_t i = 0; i < nominals_.size(); ++i) {
+            if (counts_[i] > 0) {
+                out << nominals_[i] << ": "s << counts_[i] << endl;
+            }
+        }
+    }
+
+private:
+    const vector<int64_t> nominals_;
+    vector<int> counts_;
+
+    //int GetIndex(int64_t value) const {
+    //    return find(nominals_.begin(), nominals_.end(), value) - nominals_.begin();
+    //}
+};
+
+ostream& operator<<(ostream& out, const MoneyBox& cash) {
+    cash.PrintCoins(out);
+    return out;
+}
+
+int main() {
+    MoneyBox cash({10, 50, 100, 200, 500, 1000, 2000, 5000});
+
+    int times;
+    cout << "Enter number of coins you have:"s << endl;
+    cin >> times;
+
+    cout << "Enter all nominals:"s << endl;
+    for (int i = 0; i < times; ++i) {
+        int64_t value;
+        cin >> value;
+        cash.PushCoin(value);
+    }
+
+    cout << cash << endl;
+}
+
 ///////////////////////////////
 #include <cassert>
 #include <cstdint>
