@@ -1,13 +1,19 @@
-#include "input_reader.h"
-
 #include <algorithm>
 #include <cassert>
 #include <iterator>
 
+#include "geo.h"
+#include "input_reader.h"
+
+using namespace std::literals;
+
+namespace transport_catalogue {
+
+namespace detail {
 /**
  * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
  */
-Coordinates ParseCoordinates(std::string_view str) {
+transport_catalogue::geo::Coordinates ParseCoordinates(std::string_view str) {
     static const double nan = std::nan("");
 
     auto not_space = str.find_first_not_of(' ');
@@ -53,7 +59,6 @@ std::vector<std::string_view> Split(std::string_view string, char delim) {
         }
         pos = delim_pos + 1;
     }
-
     return result;
 }
 
@@ -73,6 +78,21 @@ std::vector<std::string_view> ParseRoute(std::string_view route) {
 
     return results;
 }
+/* std::pair<std::vector<std::string_view>, bool> ParseRoute(std::string_view route) {
+    if (route.find('>') != route.npos) {
+        return make_pair(Split(route, '>'), true);
+    }
+
+    auto stops = Split(route, '-');
+    std::vector<std::string_view> results(stops.begin(), stops.end());
+    results.insert(results.end(), std::next(stops.rbegin()), stops.rend());
+
+    return make_pair(results, false);
+} */
+
+} // detail
+
+namespace input {
 
 CommandDescription ParseCommandDescription(std::string_view line) {
     auto colon_pos = line.find(':');
@@ -104,4 +124,27 @@ void InputReader::ParseLine(std::string_view line) {
 
 void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
     // Реализуйте метод самостоятельно
+    std::vector<CommandDescription> buses = {};
+
+    for (auto& query : commands_) {
+        if (query.command == "Bus"s) {
+            buses.push_back(std::move(query));
+        } else {
+            transport_catalogue::geo::Coordinates lat_lng = transport_catalogue::detail::ParseCoordinates(query.description);
+            catalogue.AddStop(query.id, lat_lng);
+        }
+    }
+    for (auto& query : buses) {
+        std::vector<std::string_view> bus_route = transport_catalogue::detail::ParseRoute(query.description);
+        //bool is_circle = ParseRoute(query.description).second;
+        std::vector<const Stop*> bus_stops = {};
+        for (auto& bus_stop : bus_route) {
+            bus_stops.push_back(std::move(catalogue.FindStop(bus_stop)));
+        }
+        catalogue.AddBus(query.id, bus_stops/* , is_circle */);
+    }
 }
+
+} // input
+
+} // transport_catalogue

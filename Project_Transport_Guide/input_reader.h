@@ -3,8 +3,17 @@
 #include <string_view>
 #include <vector>
 
-#include "geo.h"
 #include "transport_catalogue.h"
+
+namespace transport_catalogue {
+
+namespace detail {
+
+std::vector<std::string_view> Split(std::string_view string, char delim);
+
+} // detail
+
+namespace input {
 
 struct CommandDescription {
     // Определяет, задана ли команда (поле command непустое)
@@ -36,3 +45,7 @@ public:
 private:
     std::vector<CommandDescription> commands_;
 };
+
+} // input
+
+} // transport_catalogue
