@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fstream>
 #include <string>
 
 #include "input_reader.h"
@@ -11,23 +10,7 @@ using namespace std;
 int main() {
     transport_catalogue::TransportCatalogue catalogue;
 
-    int base_request_count = 10;
-    cin >> base_request_count >> ws;
+    transport_catalogue::input::FillCatalogueWithRequests(cin, catalogue); // перенёс всё в input_reader
 
-    transport_catalogue::input::InputReader reader;
-    for (int i = 0; i < base_request_count; ++i) {
-        string line;
-        getline(cin, line);
-        reader.ParseLine(line);
-    }
-    reader.ApplyCommands(catalogue);
-
-    int stat_request_count = 3;
-    cin >> stat_request_count >> ws;
-
-    for (int i = 0; i < stat_request_count; ++i) {
-        string line;
-        getline(cin, line);
-        transport_catalogue::output::ParseAndPrintStat(catalogue, line, cout);
-    }
+    transport_catalogue::output::GetCatalogueStats(cin, catalogue, cout); // перенёс всё в output_reader
 }

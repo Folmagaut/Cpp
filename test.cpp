@@ -2,6 +2,440 @@
 
 
 
+///////////////////////////////////////
+#include <cstdint>
+#include <climits>
+#include <iostream>
+
+using namespace std;
+
+int main() {
+    int64_t a;
+    int64_t b;
+    cin >> a >> b;
+    if ((a > 0 && b > 0 && a > LLONG_MAX - b)) {
+        cout << "Overflow!"s << endl;
+    } else if (a < 0 && b < 0 && a < LLONG_MIN - b) {
+        cout << "Overflow!"s << endl;
+    } else {
+        cout << a + b << endl;
+    }  
+}
+
+//////////////////////////////////////////////////////////
+#include <cassert>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+
+using namespace std::literals;
+
+template <typename Key, typename Value, typename ValueFactoryFn>
+class Cache {
+public:
+    // Создаёт кеш, инициализированный фабрикой значений, созданной по умолчанию
+    Cache() = default;
+
+    // Создаёт кеш, инициализированный объетом, играющим роль фабрики,
+    // создающей (при помощи operator() значение по его ключу)
+    // Фабрика должна вернуть shared_ptr<Value> либо unique_ptr<Value>.
+    // Пример использования:
+    // shared_ptr<Value> value = value_factory(key);
+    explicit Cache(ValueFactoryFn value_factory) : value_factory_(std::move(value_factory)) {
+        // Реализуйте конструктор самостоятельно
+    }
+
+    // Возвращает закешированное значение по ключу. Если значение отсутствует или уже удалено,
+    // оно должно быть создано с помощью фабрики и сохранено в кеше.
+    // Если на объект нет внешних ссылок, он должен быть удалён из кеша
+    std::shared_ptr<Value> GetValue(const Key& key) {
+        //(void) key;
+        // Заглушка. Реализуйте метод самостоятельно
+        auto it = cache_.find(key);
+        if (it != cache_.end() && !it->second.expired()) {
+            return it->second.lock();
+        }
+
+        auto value = value_factory_(key);
+        cache_[key] = value;
+        return value;
+    }
+
+    private:
+    std::unordered_map<Key, std::weak_ptr<Value>> cache_;
+    ValueFactoryFn value_factory_;
+};
+
+// Пример объекта, находящегося в кеше
+class Object {
+public:
+    explicit Object(std::string id)
+        : id_(std::move(id))  //
+    {
+        using namespace std;
+        cout << "Object '"sv << id_ << "' has been created"sv << endl;
+    }
+
+    const std::string& GetId() const {
+        return id_;
+    }
+
+    ~Object() {
+        using namespace std;
+        cout << "Object '"sv << id_ << "' has been destroyed"sv << endl;
+    }
+
+private:
+    std::string id_;
+};
+
+using ObjectPtr = std::shared_ptr<Object>;
+
+struct ObjectFactory {
+    ObjectPtr operator()(std::string id) const {
+        return std::make_shared<Object>(std::move(id));
+    }
+};
+
+void Test1() {
+    using namespace std;
+    ObjectPtr alice1;
+    // Кеш, объектов Object, создаваемых при помощи ObjectFactory,
+    // доступ к которым предоставляется по ключу типа string
+    Cache<string, Object, ObjectFactory> cache;
+
+    // Извлекаем объекты Alice и Bob
+    alice1 = cache.GetValue("Alice"s);
+    auto bob = cache.GetValue("Bob"s);
+    // Должны вернуться два разных объекта с правильными id
+    assert(alice1 != bob);
+    assert(alice1->GetId() == "Alice"s);
+    assert(bob->GetId() == "Bob"s);
+
+    // Повторный запрос объекта Alice должен вернуть существующий объект
+    auto alice2 = cache.GetValue("Alice"s);
+    assert(alice1 == alice2);
+
+    // Указатель alice_wp следит за жизнью объекта Alice
+    weak_ptr alice_wp{alice1};
+    alice1.reset();
+    assert(!alice_wp.expired());
+    cout << "---"sv << endl;
+    alice2.reset();
+    // Объект Alice будет удалён, так как на него больше не ссылаются shared_ptr
+    assert(alice_wp.expired());
+    cout << "---"sv << endl;
+    // Объект Bob будет удалён после разрушения указателя bob
+
+    alice1 = cache.GetValue("Alice"s);  // объект 'Alice' будет создан заново
+    cout << "---"sv << endl;
+}
+
+struct Book {
+    Book(std::string title, std::string content)
+        : title(std::move(title))
+        , content(std::move(content)) {
+    }
+
+    std::string title;
+    std::string content;
+};
+
+// Функциональный объект, загружающий книги из unordered_map
+class BookLoader {
+public:
+    using BookStore = std::unordered_map<std::string, std::string>;
+
+    // Принимает константную ссылку на хранилище книг и ссылку на переменную-счётчик загрузок
+    explicit BookLoader(const BookStore& store, size_t& load_count) : store_(store), load_count_(load_count) {
+        // Реализуйте конструктор самостоятельно
+    }
+
+    // Загружает книгу из хранилища по её названию и возвращает указатель
+    // В случае успешной загрузки (книга есть в хранилище)
+    // нужно увеличить значения счётчика загрузок load_count, переданного в конструктор, на 1.
+    // Если книга в хранилище отсутствует, нужно выбросить исключение std::out_of_range,
+    // а счётчик не увеличивать
+    std::shared_ptr<Book> operator()(const std::string& title) const {
+        // Заглушка, реализуйте метод самостоятельно
+        //(void) title;
+        auto it = store_.find(title);
+        if (it == store_.end()) {
+            throw std::out_of_range("Not implemented"s);
+        }
+        ++load_count_;
+        return std::make_shared<Book>(title, it->second);
+    }
+
+private:
+    // Добавьте необходимые данные и/или методы
+    const BookStore& store_;
+    size_t& load_count_;
+};
+
+void Test2() {
+    using namespace std;
+    // Хранилище книг.
+    BookLoader::BookStore books{
+        {"Sherlock Holmes"s,
+         "To Sherlock Holmes she is always the woman. I have seldom heard him mention her under any other name."s},
+        {"Harry Potter"s, "Chapter 1. The boy who lived. ...."s},
+    };
+    using BookCache = Cache<string, Book, BookLoader>;
+
+    size_t load_count = 0;
+    // Создаём кеш, который будет использщовать BookLoader для загрузки книг из хранилища books
+    BookCache book_cache{BookLoader{books, load_count}};
+
+    // Загруженная книга должна содержать данные из хранилища
+    auto book1 = book_cache.GetValue("Sherlock Holmes"s);
+    assert(book1);
+    assert(book1->title == "Sherlock Holmes"s);
+    assert(book1->content == books.at(book1->title));
+    assert(load_count == 1);
+
+    // Повторный запрос книги должен возвращать закешированное значение
+    auto book2 = book_cache.GetValue("Sherlock Holmes"s);
+    assert(book2);
+    assert(book1 == book2);
+    assert(load_count == 1);
+
+    weak_ptr<Book> weak_book{book1};
+    assert(!weak_book.expired());
+    book1.reset();
+    book2.reset();
+    // Книга удаляется, как только на неё перестают ссылаться указатели вне кеша
+    assert(weak_book.expired());
+
+    book1 = book_cache.GetValue("Sherlock Holmes"s);
+    assert(load_count == 2);
+    assert(book1);
+
+    try {
+        book_cache.GetValue("Fifty Shades of Grey"s);
+        // BookLoader выбросит исключение при попытке загрузить несуществующую книгу
+        assert(false);
+    } catch (const std::out_of_range&) {
+        // Всё нормально. Такой книги нет в книгохранилище
+    } catch (...) {
+        cout << "Unexpected exception"sv << endl;
+    }
+    // Счётчик загрузок не должен обновиться, так как книги нет в хранилище
+    assert(load_count == 2);
+
+    // Добавляем книгу в хранилище
+    books["Fifty Shades of Grey"s] = "I scowl with frustration at myself in the mirror..."s;
+
+    try {
+        auto book = book_cache.GetValue("Fifty Shades of Grey"s);
+        // Теперь книга должна быть успешно найдена
+        assert(book->content == books.at("Fifty Shades of Grey"s));
+    } catch (...) {
+        assert(false);
+    }
+    // Счётчик загрузок должен обновиться, так как книга была загружена из хранилища
+    assert(load_count == 3);
+}
+
+int main() {
+    Test1();
+    Test2();
+}
+
+////////////////////////////////////////////
+#include <iostream>
+#include <memory>
+#include <string_view>
+
+using namespace std;
+
+struct Apartment;
+
+struct Person {
+    explicit Person(string name)
+        : name(move(name))  //
+    {
+        cout << "Person "sv << this->name << " has been created"sv << endl;
+    }
+    ~Person() {
+        cout << "Person "sv << name << " has died"sv << endl;
+    }
+
+    string name;
+    shared_ptr<Apartment> apartment;
+};
+
+struct Apartment {
+    Apartment() {
+        cout << "The apartment has been created"sv << endl;
+    }
+    ~Apartment() {
+        cout << "The apartment has been destroyed"sv << endl;
+    }
+
+    // Ссылка на Person автоматически обнулится, когда Person будет удалён.
+    weak_ptr<Person> person;
+};
+
+void PrintApartmentInfo(const Apartment& apartment) {
+    if (const auto person = apartment.person.lock()) {
+        cout << person->name << " is living in the apartment" << endl;
+    } else {
+        cout << "The apartment is empty"sv << endl;
+    }
+}
+
+int main() {
+    auto apartment = make_shared<Apartment>();
+    {
+        auto person = make_shared<Person>("Ivan"s);
+        person->apartment = apartment;
+        apartment->person = person;
+        cout << "----"sv << endl;
+    }
+    PrintApartmentInfo(*apartment);
+}
+
+//////////////////////////////////////////////////
+#include <cassert>
+#include <iostream>
+#include <memory>
+#include <string>
+
+using namespace std;
+
+template <typename Value>
+class CoW {
+    // Прокси-объект объявлен в приватной области. Поэтому его нельзя создать снаружи класса.
+    struct WriteProxy {
+        explicit WriteProxy(Value* value) noexcept
+            : value_ptr_{value} {
+        }
+
+        // Прокси-объект нельзя копировать и присваивать.
+        WriteProxy(const WriteProxy&) = delete;
+        WriteProxy& operator=(const WriteProxy&) = delete;
+
+        // У lvalue-ссылок операции разыменования нет.
+        Value& operator*() const& = delete;
+        // А у rvalue-ссылок разыменование есть.
+        [[nodiscard]] Value& operator*() const&& noexcept {
+            return *value_ptr_;
+        }
+
+        // Операции -> у lvalue-ссылок нет.
+        Value* operator->() const& = delete;
+        // У rvalue-ссылок операция -> есть.
+        Value* operator->() const&& noexcept {
+            return value_ptr_;
+        }
+
+    private:
+        Value* value_ptr_;
+    };
+public:
+
+    [[nodiscard]] WriteProxy Write() {
+        EnsureUnique();
+
+        // Возвращаем прокси-объект для модификации данных.
+        return WriteProxy(value_.get());
+    }
+    
+    // Конструируем значение по умолчанию.
+    CoW()
+        : value_(std::make_shared<Value>()) {
+    }
+
+    // Создаём значение за счёт перемещения его из value.
+    CoW(Value&& value)
+        : value_(std::make_shared<Value>(std::move(value))) {
+    }
+
+    // Создаём значение из value.
+    CoW(const Value& value)
+        : value_(std::make_shared<Value>(value)) {
+    }
+
+    // Оператор разыменования служит для чтения значения.
+    const Value& operator*() const noexcept {
+        assert(value_);
+        return *value_;
+    }
+
+    // Оператор -> служит для чтения полей и вызова константных методов.
+    const Value* operator->() const noexcept {
+        assert(value_);
+        return value_.get();
+    }
+
+    // Write принимает функцию, в которую CoW передаст неконстантную ссылку на хранящееся значение.
+    //template <typename ModifierFn>
+    //void Write(ModifierFn&& modify) {
+    //    EnsureUnique();
+    //    // Теперь value_ — единственный владелец данных.
+
+    //    std::forward<ModifierFn>(modify)(*value_);
+    //}
+    // Value& Write() {
+    //    EnsureUnique();
+
+    //    return *value_;
+    //} //- так не надо
+
+private:
+    std::shared_ptr<Value> value_;
+
+    // Удостоверяемся, что текущий объект единолично владеет данными.
+    // Если это не так, создаём копию и будем ссылаться на неё.
+    void EnsureUnique() {
+        assert(value_);
+
+        if (value_.use_count() > 1) {
+            // Кроме нас на value_ ссылается кто-то ещё, копируем содержимое value_.
+            value_ = std::make_shared<Value>(*value_);
+        }
+    }
+};
+
+int main() {
+    using namespace std::literals;
+
+    CoW<std::string> s1("Hello");
+    CoW<std::string> s2{s1};
+
+    // Для доступа к значению используем операцию разыменования.
+    std::cout << *s1 << ", "sv << *s2 << std::endl;
+
+    // Для вызова константных методов служит стрелочка.
+    std::cout << s1->size() << std::endl;
+
+    // Оба указателя ссылаются на одну и ту же строку в памяти.
+    assert(&*s1 == &*s2);
+    std::cout << &*s1 << ", "sv << &*s2 << std::endl;
+
+    //s2.Write([](auto& value) {
+        // Внутри этой функции можно изменить значение, содержащееся в s2.
+    //    value = "World"s;
+    //    value += '!';
+    //});
+
+    // Теперь s2 содержит строку "World!".
+    std::cout << *s1 << " "sv << *s2 << std::endl;
+    std::cout << &*s1 << ", "sv << &*s2 << std::endl;
+
+    // Чтобы изменить значение, нужно разыменовать результат вызова Write().
+    *s2.Write() = "Wor";
+    *s2.Write() += "ld";
+    // Можно вызывать неконстантные методы, используя ->.
+    s2.Write()->append("!");
+
+    std::cout << *s1 << " "sv << *s2 << std::endl;
+    std::cout << &*s1 << ", "sv << &*s2 << std::endl;
+}
+
 //////////////////////////////////////////////////////////
 #include <string>
 #include <iostream>

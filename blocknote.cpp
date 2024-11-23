@@ -1,136 +1,187 @@
+/* #include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <memory>
-#include <string>
+#include <iterator>
+#include <sstream>
+#include <utility>
 
-using namespace std;
+#include "geo.h"
+#include "input_reader.h"
 
-template <typename Value>
-class CoW {
-    // Прокси-объект объявлен в приватной области. Поэтому его нельзя создать снаружи класса.
-    struct WriteProxy {
-        explicit WriteProxy(Value* value) noexcept
-            : value_ptr_{value} {
-        }
+using namespace std::literals;
 
-        // Прокси-объект нельзя копировать и присваивать.
-        WriteProxy(const WriteProxy&) = delete;
-        WriteProxy& operator=(const WriteProxy&) = delete;
+namespace transport_catalogue {
 
-        // У lvalue-ссылок операции разыменования нет.
-        Value& operator*() const& = delete;
-        // А у rvalue-ссылок разыменование есть.
-        [[nodiscard]] Value& operator*() const&& noexcept {
-            return *value_ptr_;
-        }
+namespace detail {
 
-        // Операции -> у lvalue-ссылок нет.
-        Value* operator->() const& = delete;
-        // У rvalue-ссылок операция -> есть.
-        Value* operator->() const&& noexcept {
-            return value_ptr_;
-        }
+std::string_view Trim(std::string_view string);
 
-    private:
-        Value* value_ptr_;
-    };
-public:
-
-    [[nodiscard]] WriteProxy Write() {
-        EnsureUnique();
-
-        // Возвращаем прокси-объект для модификации данных.
-        return WriteProxy(value_.get());
-    }
-    
-    // Конструируем значение по умолчанию.
-    CoW()
-        : value_(std::make_shared<Value>()) {
-    }
-
-    // Создаём значение за счёт перемещения его из value.
-    CoW(Value&& value)
-        : value_(std::make_shared<Value>(std::move(value))) {
-    }
-
-    // Создаём значение из value.
-    CoW(const Value& value)
-        : value_(std::make_shared<Value>(value)) {
-    }
-
-    // Оператор разыменования служит для чтения значения.
-    const Value& operator*() const noexcept {
-        assert(value_);
-        return *value_;
-    }
-
-    // Оператор -> служит для чтения полей и вызова константных методов.
-    const Value* operator->() const noexcept {
-        assert(value_);
-        return value_.get();
-    }
-
-    // Write принимает функцию, в которую CoW передаст неконстантную ссылку на хранящееся значение.
-    /* template <typename ModifierFn>
-    void Write(ModifierFn&& modify) {
-        EnsureUnique();
-        // Теперь value_ — единственный владелец данных.
-
-        std::forward<ModifierFn>(modify)(*value_);
-    } */
-    /* Value& Write() {
-        EnsureUnique();
-
-        return *value_;
-    } */ //- так не надо
-
-private:
-    std::shared_ptr<Value> value_;
-
-    // Удостоверяемся, что текущий объект единолично владеет данными.
-    // Если это не так, создаём копию и будем ссылаться на неё.
-    void EnsureUnique() {
-        assert(value_);
-
-        if (value_.use_count() > 1) {
-            // Кроме нас на value_ ссылается кто-то ещё, копируем содержимое value_.
-            value_ = std::make_shared<Value>(*value_);
-        }
-    }
-};
-
-int main() {
-    using namespace std::literals;
-
-    CoW<std::string> s1("Hello");
-    CoW<std::string> s2{s1};
-
-    // Для доступа к значению используем операцию разыменования.
-    std::cout << *s1 << ", "sv << *s2 << std::endl;
-
-    // Для вызова константных методов служит стрелочка.
-    std::cout << s1->size() << std::endl;
-
-    // Оба указателя ссылаются на одну и ту же строку в памяти.
-    assert(&*s1 == &*s2);
-    std::cout << &*s1 << ", "sv << &*s2 << std::endl;
-
-    /* s2.Write([](auto& value) {
-        // Внутри этой функции можно изменить значение, содержащееся в s2.
-        value = "World"s;
-        value += '!';
-    }); */
-
-    // Теперь s2 содержит строку "World!".
-    std::cout << *s1 << " "sv << *s2 << std::endl;
-    std::cout << &*s1 << ", "sv << &*s2 << std::endl;
-
-    // Чтобы изменить значение, нужно разыменовать результат вызова Write().
-    *s2.Write() = "Wor";
-    *s2.Write() += "ld";
-    // Можно вызывать неконстантные методы, используя ->.
-    s2.Write()->append("!");
-
-    std::cout << *s1 << " "sv << *s2 << std::endl;
-    std::cout << &*s1 << ", "sv << &*s2 << std::endl;
+std::pair<std::string, std::string> ParseDistances(std::string id, std::string_view str) {
+    //auto not_space = str.find_first_not_of(' ');
+    auto comma = str.find(',');
+    auto not_space2 = str.find_first_not_of(' ', comma + 1);
+    auto comma2 = str.find(',', not_space2);
+    std::string distances = std::string(str.substr(comma2 + 2));
+    return std::make_pair(id, distances);
 }
+
+//
+// * Парсит строку вида "10.123,  -30.1837" и возвращает пару координат (широта, долгота)
+//
+transport_catalogue::geo::Coordinates ParseCoordinates(std::string_view str) {
+    static const double nan = std::nan("");
+
+    auto not_space = str.find_first_not_of(' ');
+    auto comma = str.find(',');
+
+    if (comma == str.npos) {
+        return {nan, nan};
+    }
+
+    auto not_space2 = str.find_first_not_of(' ', comma + 1);
+    auto comma2 = str.find(',', not_space2);
+
+    double lat = std::stod(std::string(str.substr(not_space, comma - not_space)));
+    double lng = std::stod(std::string(str.substr(not_space2, comma2 - not_space2)));
+
+    //std::string dist = std::string(str.substr(comma2 + 2));
+
+    //ParseDistances(id, dist);
+
+    return {lat, lng};
+}
+
+//
+// Удаляет пробелы в начале и конце строки
+//
+std::string_view Trim(std::string_view string) {
+    const auto start = string.find_first_not_of(' ');
+    if (start == string.npos) {
+        return {};
+    }
+    return string.substr(start, string.find_last_not_of(' ') + 1 - start);
+}
+
+//
+// Разбивает строку string на n строк, с помощью указанного символа-разделителя delim
+//
+std::vector<std::string_view> Split(std::string_view string, char delim) {
+    std::vector<std::string_view> result;
+
+    size_t pos = 0;
+    while ((pos = string.find_first_not_of(' ', pos)) < string.length()) {
+        auto delim_pos = string.find(delim, pos);
+        if (delim_pos == string.npos) {
+            delim_pos = string.size();
+        }
+        if (auto substr = Trim(string.substr(pos, delim_pos - pos)); !substr.empty()) {
+            result.push_back(substr);
+        }
+        pos = delim_pos + 1;
+    }
+    return result;
+}
+
+//
+// Парсит маршрут.
+// Для кольцевого маршрута (A>B>C>A) возвращает массив названий остановок [A,B,C,A]
+// Для некольцевого маршрута (A-B-C-D) возвращает массив названий остановок [A,B,C,D,C,B,A]
+//
+std::vector<std::string_view> ParseRoute(std::string_view route) {
+    if (route.find('>') != route.npos) {
+        return Split(route, '>');
+    }
+
+    auto stops = Split(route, '-');
+    std::vector<std::string_view> results(stops.begin(), stops.end());
+    results.insert(results.end(), std::next(stops.rbegin()), stops.rend());
+
+    return results;
+}
+
+} // detail
+
+namespace input {
+
+CommandDescription ParseCommandDescription(std::string_view line) {
+    auto colon_pos = line.find(':');
+    if (colon_pos == line.npos) {
+        return {};
+    }
+
+    auto space_pos = line.find(' ');
+    if (space_pos >= colon_pos) {
+        return {};
+    }
+
+    auto not_space = line.find_first_not_of(' ', space_pos);
+    if (not_space >= colon_pos) {
+        return {};
+    }
+
+    return {std::string(line.substr(0, space_pos)),
+            std::string(line.substr(not_space, colon_pos - not_space)),
+            std::string(line.substr(colon_pos + 1))};
+}
+
+// void InputReader::AddDistance(std::pair<std::string, std::string> id_dist_str) {
+//        distances_.push_back(id_dist_str);
+//}
+
+void InputReader::ParseLine(std::string_view line) {
+    auto command_description = ParseCommandDescription(line);
+    if (command_description) {
+        commands_.push_back(std::move(command_description));
+    }
+}
+
+void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
+    // Реализуйте метод самостоятельно
+    std::vector<CommandDescription> buses = {};
+    std::vector<std::pair<std::string_view, std::string_view>> distances_;
+
+    for (auto& query : commands_) {
+        if (query.command == "Bus"s) {
+            buses.push_back(std::move(query));
+        } else {
+            transport_catalogue::geo::Coordinates lat_lng = transport_catalogue::detail::ParseCoordinates(query.description);
+            catalogue.AddStop(query.id, lat_lng);
+            distances_.push_back(std::move(transport_catalogue::detail::ParseDistances(query.id, query.description)));
+        }
+    }
+    //distances_ = transport_catalogue::detail::ParseDistances(query.description);
+    for (auto& query : buses) {
+        std::vector<std::string_view> bus_route = transport_catalogue::detail::ParseRoute(query.description);
+        std::vector<const Stop*> bus_stops = {};
+        for (auto& bus_stop : bus_route) {
+            bus_stops.push_back(std::move(catalogue.FindStop(bus_stop)));
+        }
+        catalogue.AddBus(query.id, bus_stops);
+    }
+}
+
+// добавлено
+void FillCatalogueWithRequests( std::istream& in, TransportCatalogue& catalogue) {
+    int base_request_count = 1;
+    //in >> base_request_count >> std::ws;
+
+    InputReader reader;
+    for (int i = 0; i < base_request_count; ++i) {
+        //std::string line;
+        //std::getline(in, line);
+        reader.ParseLine("Stop Marushkino: 55.595884, 37.209755, 9900m to Rasskazovka, 100m to Marushkino"s);
+    }
+    reader.ApplyCommands(catalogue);
+}
+
+} // input
+
+} // transport_catalogue
+
+std::istringstream iss(dist);
+    //std::vector<std::pair<std::string, std::string>> distances_;
+    std::string distance;
+    while (getline(iss, distance, ',')) {
+        distance = Trim(distance);
+        //distances_.push_back(std::make_pair(id, distance));
+    } */

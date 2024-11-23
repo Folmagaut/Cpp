@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -14,6 +15,12 @@ std::vector<std::string_view> Split(std::string_view string, char delim);
 } // detail
 
 namespace input {
+
+struct Distance {
+    std::string point_a_;
+    std::string point_b_;
+    int distance_;
+};
 
 struct CommandDescription {
     // Определяет, задана ли команда (поле command непустое)
@@ -45,6 +52,8 @@ public:
 private:
     std::vector<CommandDescription> commands_;
 };
+
+void FillCatalogueWithRequests(std::istream& in, TransportCatalogue& catalogue); // добавлено
 
 } // input
 
