@@ -1,4 +1,5 @@
 #include <iomanip>
+//#include <fstream>
 #include <iostream>
 #include <string_view>
 #include <vector>
@@ -56,7 +57,7 @@ void GetCatalogueStats(std::istream& in, const TransportCatalogue& tansport_cata
 
     for (int i = 0; i < stat_request_count; ++i) {
         std::string line;
-        getline(in, line);
+        std::getline(in, line);
         ParseAndPrintStat(tansport_catalogue, line, out);
     }
 }

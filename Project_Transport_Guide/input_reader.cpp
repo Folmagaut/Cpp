@@ -149,7 +149,9 @@ void InputReader::ParseLine(std::string_view line) {
 void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
     // Реализуйте метод самостоятельно
     std::vector<CommandDescription> buses = {};
+    //buses.reserve(commands_.size());
     std::vector<Distance> distances = {};
+    //distances.reserve(commands_.size());
 
     for (auto& query : commands_) {
         if (query.command == "Bus"s) {
