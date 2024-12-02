@@ -6,12 +6,7 @@
 using namespace std::literals;
 using namespace svg;
 
-/*
-Пример использования библиотеки. Он будет компилироваться и работать, когда вы реализуете
-все классы библиотеки.
-*/
-
-//namespace {
+namespace {
 
 Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_rays) {
     Polyline polyline;
@@ -27,41 +22,96 @@ Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_ra
     return polyline;
 }
 
-//}  // namespace
+}  // namespace
 
+namespace shapes {
+
+class Triangle : public svg::Drawable {
+public:
+    Triangle(svg::Point p1, svg::Point p2, svg::Point p3)
+    : p1_(p1)
+    , p2_(p2)
+    , p3_(p3) {
+    }
+
+    void Draw(svg::ObjectContainer& container) const override {
+        container.Add(svg::Polyline().AddPoint(p1_).AddPoint(p2_).AddPoint(p3_).AddPoint(p1_));
+    }
+private:
+    svg::Point p1_ = {0.0, 0.0};
+    svg::Point p2_ = {0.0, 0.0};
+    svg::Point p3_ = {0.0, 0.0};
+};
+
+class Star : public svg::Drawable {
+public:
+    Star(svg::Point center, double radius, double inner_radius, int num_rays)
+    : center_(center)
+    , radius_(radius)
+    , inner_radius_(inner_radius)
+    , num_rays_(num_rays) {
+    }
+
+    void Draw(svg::ObjectContainer& container) const override {
+        container.Add(CreateStar(center_, radius_, inner_radius_, num_rays_));
+    }
+private:
+    svg::Point center_ = {0.0, 0.0};
+    double radius_ = 0;
+    double inner_radius_ = 0;
+    int num_rays_ = 0;
+};
+
+class Snowman : public svg::Drawable {
+public:
+Snowman (svg::Point head_center, double head_radius)
+    : head_center_(head_center)
+    , head_radius_(head_radius) {
+    }
+
+    void Draw(svg::ObjectContainer& container) const override {
+        container.Add(svg::Circle().SetCenter({head_center_.x, head_center_.y + head_radius_ * 5}).SetRadius(head_radius_ * 2));
+        container.Add(svg::Circle().SetCenter({head_center_.x, head_center_.y + head_radius_ * 2}).SetRadius(head_radius_ * 1.5));
+        container.Add(svg::Circle().SetCenter(head_center_).SetRadius(head_radius_));
+    }
+private:
+    Point head_center_ = {0.0, 0.0};
+    double head_radius_ = 0;
+};
+
+} // shapes
+
+template <typename DrawableIterator>
+void DrawPicture(DrawableIterator begin, DrawableIterator end, svg::ObjectContainer& target) {
+    for (auto it = begin; it != end; ++it) {
+        (*it)->Draw(target);
+    }
+}
+
+template <typename Container>
+void DrawPicture(const Container& container, svg::ObjectContainer& target) {
+    using namespace std;
+    DrawPicture(begin(container), end(container), target);
+}
 
 int main() {
-// Выводит приветствие, круг и звезду
-//void DrawPicture() {
-    Document doc;
-    doc.Add(Circle().SetCenter({20, 20}).SetRadius(10));
-    doc.Add(Text()
-                .SetFontFamily("Verdana"s)
-                .SetPosition({35, 20})
-                .SetOffset({0, 6})
-                .SetFontSize(12)
-                .SetFontWeight("bold"s)
-                .SetData("Hello C++"s));
-    doc.Add(CreateStar({20, 50}, 10, 5, 5));
-    doc.Render(std::cout);
-//}
-    /*
-       Это пример для иллюстрации работы класса Circle, данного в заготовке решения.
-       После того как вы реализуете реализуете класс Document, аналогичного результата
-       можно будет достичь так:
+    using namespace svg;
+    using namespace shapes;
+    using namespace std;
 
-       Document doc;
-       doc.Add(Circle().SetCenter({20, 20}).SetRadius(10));
-       doc.Render(std::cout);
-    
-    std::cout << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << std::endl;
-    std::cout << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << std::endl;
+    vector<unique_ptr<svg::Drawable>> picture;
 
-    Circle c;
-    c.SetCenter({20, 20}).SetRadius(10);
-    RenderContext ctx(std::cout, 2, 2);
-    c.Render(ctx);
+    picture.emplace_back(make_unique<Triangle>(Point{100, 20}, Point{120, 50}, Point{80, 40}));
+    // 5-лучевая звезда с центром {50, 20}, длиной лучей 10 и внутренним радиусом 4
+    picture.emplace_back(make_unique<Star>(Point{50.0, 20.0}, 10.0, 4.0, 5));
+    // Снеговик с "головой" радиусом 10, имеющей центр в точке {30, 20}
+    picture.emplace_back(make_unique<Snowman>(Point{30, 20}, 10.0));
 
-    std::cout << "</svg>"sv; */
-    
+    svg::Document doc;
+    // Так как документ реализует интерфейс ObjectContainer,
+    // его можно передать в DrawPicture в качестве цели для рисования
+    DrawPicture(picture, doc);
+
+    // Выводим полученный документ в stdout
+    doc.Render(cout);
 }

@@ -67,7 +67,7 @@ private:
  * Класс Circle моделирует элемент <circle> для отображения круга
  * https://developer.mozilla.org/en-US/docs/Web/SVG/Element/circle
  */
-class Circle final : public Object {
+class Circle: public Object {
 public:
     Circle& SetCenter(Point center);
     Circle& SetRadius(double radius);
@@ -122,7 +122,7 @@ public:
 private:
     Point pos_ = {0.0, 0.0};
     Point offset_ = {0.0, 0.0};
-    uint32_t size_ = 1;
+    uint32_t font_size_ = 1;
     std::string font_family_;
     std::string font_weight_;
     std::string data_;
@@ -130,7 +130,7 @@ private:
     void RenderObject(const RenderContext& context) const override;
 };
 
-class Document {
+class ObjectContainer {
 public:
     /*
      Метод Add добавляет в svg-документ любой объект-наследник svg::Object.
@@ -144,14 +144,27 @@ public:
     }
 
     // Добавляет в svg-документ объект-наследник svg::Object
-    void AddPtr(std::unique_ptr<Object>&& obj);
+    virtual void AddPtr(std::unique_ptr<Object>&& obj) = 0;
+    virtual ~ObjectContainer() = default;
+protected:
+    //~ObjectContainer() = default;
+    std::vector<std::unique_ptr<Object>> objects_;
+};
+
+class Document : public ObjectContainer {
+public:
+    // Добавляет в svg-документ объект-наследник svg::Object
+    void AddPtr(std::unique_ptr<Object>&& obj) override;
 
     // Выводит в ostream svg-представление документа
     void Render(std::ostream& out) const;
+};
 
-    // Прочие методы и данные, необходимые для реализации класса Document
-private:
-    std::vector<std::unique_ptr<Object>> objects_;
+class Drawable {
+public:
+    virtual void Draw (ObjectContainer& obj) const = 0;
+
+    virtual ~Drawable() = default;
 };
 
 }  // namespace svg

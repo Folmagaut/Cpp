@@ -1,8 +1,55 @@
+//#include <iostream>
 #include "svg.h"
 
 namespace svg {
 using namespace std;
 using namespace literals;
+
+namespace {
+
+template <typename T>
+inline void RenderValue(std::ostream& out, const T& value) {
+    out << value;
+}
+
+void HtmlEncodeString(std::ostream& out, std::string_view sv) {
+    for (char c : sv) {
+        switch (c) {
+            case '"':
+                out << "&quot;"sv;
+                break;
+            case '<':
+                out << "&lt;"sv;
+                break;
+            case '>':
+                out << "&gt;"sv;
+                break;
+            case '&':
+                out << "&amp;"sv;
+                break;
+            case '\'':
+                out << "&apos;"sv;
+                break;
+            default:
+                out.put(c);
+        }
+    }
+}
+
+template <>
+void RenderValue<std::string>(std::ostream& out, const std::string& s) {
+    HtmlEncodeString(out, s);
+}
+
+template <typename AttrType>
+void RenderAttr(std::ostream& out, std::string_view name, const AttrType& value) {
+    using namespace std::literals;
+    out << name << "=\""sv;
+    RenderValue(out, value);
+    out.put('"');
+}
+
+}  // namespace
 
 void Object::Render(const RenderContext& context) const {
     context.RenderIndent();
@@ -19,15 +66,14 @@ Circle& Circle::SetCenter(Point center)  {
     center_ = center;
     return *this;
 }
-
 Circle& Circle::SetRadius(double radius)  {
     radius_ = radius;
     return *this;
 }
-
 void Circle::RenderObject(const RenderContext& context) const {
-    auto& out = context.out;
-    out << "<circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y << "\" "sv << "r=\""sv << radius_ << "\" "sv << "/>"sv;
+    std::ostream& out = context.out;
+    out << "<circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y;
+    out  << "\" "sv << "r=\""sv << radius_ << "\" "sv << "/>"sv;
 }
 
 // ---------- Polyline ------------------
@@ -36,9 +82,8 @@ Polyline& Polyline::AddPoint(Point point) {
     points_.push_back(move(point));
     return *this;
 }
-
 void Polyline::RenderObject(const RenderContext& context) const {
-    auto& out = context.out;
+    std::ostream& out = context.out;
     out << "<polyline points=\""sv;
     bool is_first = true;
     for (const Point& point : points_) {
@@ -50,7 +95,7 @@ void Polyline::RenderObject(const RenderContext& context) const {
         }
     }
     out << "\" />"sv;
-    }
+}
 
 // ---------- Text ------------------
 
@@ -63,7 +108,7 @@ Text& Text::SetOffset(Point offset) {
     return *this;
 }
 Text& Text::SetFontSize(uint32_t size) {
-    size_ = size;
+    font_size_ = size;
     return *this;
 }
 Text& Text::SetFontFamily(string font_family) {
@@ -79,33 +124,33 @@ Text& Text::SetData(string data) {
     return *this;
 }
 void Text::RenderObject(const RenderContext& context) const {
-    auto& out = context.out;
-    out << "<text x=\""sv << pos_.x << "\" y=\""sv << pos_.y << "\" "sv
-    << "dx=\""sv << offset_.x << "\" dy=\""sv << offset_.y << "\" "sv
-    << "font-size=\""sv << size_ << "\""sv;
+    std::ostream& out = context.out;
+    out << "<text"sv;
+    RenderAttr(out, " x"sv, pos_.x);
+    RenderAttr(out, " y"sv, pos_.y);
+    RenderAttr(out, " dx"sv, offset_.x);
+    RenderAttr(out, " dy"sv, offset_.y);
+    RenderAttr(out, " font-size"sv, font_size_);
     if (!font_family_.empty()) {
-        out << " font-family=\""sv << font_family_ << "\" "sv;
+        RenderAttr(out, " font-family"sv, font_family_);
     }
     if (!font_weight_.empty()) {
-        out << "font-weight=\""sv << font_weight_ << "\""sv;
+        RenderAttr(out, " font-weight"sv, font_weight_);
     }
-    out << ">"sv << data_ << "</text>"sv;
+    out.put('>');
+    HtmlEncodeString(out, data_);
+    out << "</text>"sv;
 }
 
 // ---------- Document ------------------
 
-/* void Document::Add(Object obj) {
-    objects_.emplace_back(make_unique<Object>(move(obj)));
-} */
-
 void Document::AddPtr(unique_ptr<Object>&& obj) {
     objects_.emplace_back(move(obj));
 }
-
 void Document::Render(ostream& out) const {
     RenderContext ctx(cout, 2, 2);
-    out << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << endl
-    << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << endl;
+    out << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << endl;
+    out << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << endl;
     for (const auto& obj : objects_) {
         obj->Render(ctx);
     }
