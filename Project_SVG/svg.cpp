@@ -4,6 +4,52 @@
 namespace svg {
 using namespace std;
 using namespace literals;
+using Color = std::variant<std::monostate, std::string, Rgb, Rgba>;
+
+//---------------- ostream operator<<----------------
+std::ostream& operator<<(std::ostream& out, Color& color) {
+    //ostringstream strm;
+    std::visit(ColorPrinter{out}, color);
+    return out;
+}
+
+std::ostream& operator<<(std::ostream& out, StrokeLineCap stroke_line_cap) {
+    switch (stroke_line_cap) {
+        case StrokeLineCap::BUTT :
+            return out << "butt"sv;
+            break;
+        case StrokeLineCap::ROUND :
+            return out << "round"sv;
+            break;
+        case StrokeLineCap::SQUARE :
+            return out << "square"sv;
+            break;
+        default :
+            return out;
+    }
+}
+
+std::ostream& operator<<(std::ostream& out, StrokeLineJoin stroke_line_join) {
+    switch (stroke_line_join) {
+        case StrokeLineJoin::ARCS :
+            return out << "arcs"sv;
+            break;
+        case StrokeLineJoin::BEVEL :
+            return out << "bevel"sv;
+            break;
+        case StrokeLineJoin::MITER :
+            return out << "miter"sv;
+            break;
+        case StrokeLineJoin::MITER_CLIP :
+            return out << "miter-clip"sv;
+            break;
+        case StrokeLineJoin::ROUND :
+            return out << "round"sv;
+            break;
+        default :
+            return out;
+    }
+}
 
 namespace {
 
@@ -70,10 +116,14 @@ Circle& Circle::SetRadius(double radius)  {
     radius_ = radius;
     return *this;
 }
+
 void Circle::RenderObject(const RenderContext& context) const {
     std::ostream& out = context.out;
     out << "<circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y;
-    out  << "\" "sv << "r=\""sv << radius_ << "\" "sv << "/>"sv;
+    out << "\" "sv << "r=\""sv << radius_ << "\" "sv;
+    RenderAttrs(context.out); // атрибуты PathProps
+    out << "/>"sv;
+
 }
 
 // ---------- Polyline ------------------
@@ -82,6 +132,7 @@ Polyline& Polyline::AddPoint(Point point) {
     points_.push_back(move(point));
     return *this;
 }
+
 void Polyline::RenderObject(const RenderContext& context) const {
     std::ostream& out = context.out;
     out << "<polyline points=\""sv;
@@ -94,7 +145,9 @@ void Polyline::RenderObject(const RenderContext& context) const {
             out << " "sv << point.x << "," << point.y;
         }
     }
-    out << "\" />"sv;
+    out << "\""sv;
+    RenderAttrs(context.out); // атрибуты PathProps
+    out << "/>"sv;
 }
 
 // ---------- Text ------------------
@@ -123,6 +176,7 @@ Text& Text::SetData(string data) {
     data_ = move(data);
     return *this;
 }
+
 void Text::RenderObject(const RenderContext& context) const {
     std::ostream& out = context.out;
     out << "<text"sv;
@@ -137,6 +191,7 @@ void Text::RenderObject(const RenderContext& context) const {
     if (!font_weight_.empty()) {
         RenderAttr(out, " font-weight"sv, font_weight_);
     }
+    RenderAttrs(context.out); // атрибуты PathProps
     out.put('>');
     HtmlEncodeString(out, data_);
     out << "</text>"sv;

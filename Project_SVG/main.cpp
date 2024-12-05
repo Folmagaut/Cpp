@@ -5,6 +5,7 @@
 
 using namespace std::literals;
 using namespace svg;
+using Color = std::variant<std::monostate, std::string, svg::Rgb, svg::Rgba>;
 
 namespace {
 
@@ -19,6 +20,7 @@ Polyline CreateStar(Point center, double outer_rad, double inner_rad, int num_ra
         angle += M_PI / num_rays;
         polyline.AddPoint({center.x + inner_rad * sin(angle), center.y - inner_rad * cos(angle)});
     }
+
     return polyline;
 }
 
@@ -53,30 +55,34 @@ public:
     }
 
     void Draw(svg::ObjectContainer& container) const override {
-        container.Add(CreateStar(center_, radius_, inner_radius_, num_rays_));
+        container.Add(CreateStar(center_, radius_, inner_radius_, num_rays_).SetFillColor(fill_color_).SetStrokeColor(stroke_color_));
     }
 private:
     svg::Point center_ = {0.0, 0.0};
     double radius_ = 0;
     double inner_radius_ = 0;
     int num_rays_ = 0;
+    Color fill_color_ = "red"s;
+    Color stroke_color_ ="black"s;
 };
 
 class Snowman : public svg::Drawable {
 public:
-Snowman (svg::Point head_center, double head_radius)
-    : head_center_(head_center)
-    , head_radius_(head_radius) {
-    }
+    Snowman (svg::Point head_center, double head_radius)
+        : head_center_(head_center)
+        , head_radius_(head_radius) {
+        }
 
-    void Draw(svg::ObjectContainer& container) const override {
-        container.Add(svg::Circle().SetCenter({head_center_.x, head_center_.y + head_radius_ * 5}).SetRadius(head_radius_ * 2));
-        container.Add(svg::Circle().SetCenter({head_center_.x, head_center_.y + head_radius_ * 2}).SetRadius(head_radius_ * 1.5));
-        container.Add(svg::Circle().SetCenter(head_center_).SetRadius(head_radius_));
-    }
-private:
-    Point head_center_ = {0.0, 0.0};
-    double head_radius_ = 0;
+        void Draw(svg::ObjectContainer& container) const override {
+            container.Add(svg::Circle().SetCenter({head_center_.x, head_center_.y + head_radius_ * 5}).SetRadius(head_radius_ * 2).SetFillColor(fill_color_).SetStrokeColor(stroke_color_));
+            container.Add(svg::Circle().SetCenter({head_center_.x, head_center_.y + head_radius_ * 2}).SetRadius(head_radius_ * 1.5).SetFillColor(fill_color_).SetStrokeColor(stroke_color_));
+            container.Add(svg::Circle().SetCenter(head_center_).SetRadius(head_radius_).SetFillColor(fill_color_).SetStrokeColor(stroke_color_));
+        }
+    private:
+        Point head_center_ = {0.0, 0.0};
+        double head_radius_ = 0;
+        Color fill_color_ = "rgb(240,240,240)"s;
+        Color stroke_color_ = "black"s;
 };
 
 } // shapes
@@ -96,22 +102,26 @@ void DrawPicture(const Container& container, svg::ObjectContainer& target) {
 
 int main() {
     using namespace svg;
-    using namespace shapes;
     using namespace std;
 
-    vector<unique_ptr<svg::Drawable>> picture;
+    Color none_color;
+    cout << none_color << endl; // none
+    
+    Color purple{"purple"s};
+    cout << purple << endl; // purple
+    
+    Color rgb = Rgb{100, 200, 255};
+    cout << rgb << endl; // rgb(100,200,255)
 
-    picture.emplace_back(make_unique<Triangle>(Point{100, 20}, Point{120, 50}, Point{80, 40}));
-    // 5-лучевая звезда с центром {50, 20}, длиной лучей 10 и внутренним радиусом 4
-    picture.emplace_back(make_unique<Star>(Point{50.0, 20.0}, 10.0, 4.0, 5));
-    // Снеговик с "головой" радиусом 10, имеющей центр в точке {30, 20}
-    picture.emplace_back(make_unique<Snowman>(Point{30, 20}, 10.0));
+    Color rgba = Rgba{100, 200, 255, 0.5};
+    cout << rgba << endl; // rgba(100,200,255,0.5)
 
-    svg::Document doc;
-    // Так как документ реализует интерфейс ObjectContainer,
-    // его можно передать в DrawPicture в качестве цели для рисования
-    DrawPicture(picture, doc);
-
-    // Выводим полученный документ в stdout
+    Circle c;
+    c.SetRadius(3.5).SetCenter({1.0, 2.0});
+    c.SetFillColor(rgba);
+    c.SetStrokeColor(purple);
+    
+    Document doc;
+    doc.Add(std::move(c));
     doc.Render(cout);
-}
+} 
