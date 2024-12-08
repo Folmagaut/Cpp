@@ -39,12 +39,24 @@ struct Point {
 };
 
 struct Rgb {
+    Rgb() = default;
+    
+    Rgb(uint8_t red, uint8_t green, uint8_t blue) : red(red), green(green), blue(blue) {
+    }
+    
     uint8_t red = 0;
     uint8_t green = 0;
     uint8_t blue = 0;
 };
 
-struct Rgba {
+struct Rgba : public Rgb {
+    Rgba() : Rgb(), opacity(1.0) {
+    }
+    
+    Rgba(uint8_t red, uint8_t green, uint8_t blue, double opacity)
+        : Rgb(red, green, blue)
+        , opacity(opacity) {
+    }
     uint8_t red = 0;
     uint8_t green = 0;
     uint8_t blue = 0;
@@ -151,6 +163,7 @@ protected:
             out << "\""sv;
         }
         if (stroke_color_ != std::nullopt) {
+
             out << " stroke=\""sv;
             std::visit(ColorPrinter{out}, *stroke_color_);
             out << "\""sv;
