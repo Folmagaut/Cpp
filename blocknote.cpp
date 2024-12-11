@@ -1,131 +1,160 @@
-Node LoadNode(std::istream& input) {
-    // Skip whitespace
-    std::istreambuf_iterator<char> it(input);
-    while (std::isspace(*it)) {
-        ++it;
+{
+  "base_requests": [
+    {
+      "type": "Bus",
+      "name": "114",
+      "stops": ["Морской вокзал", "Ривьерский мост"],
+      "is_roundtrip": false
+    },
+    {
+      "type": "Stop",
+      "name": "Ривьерский мост",
+      "latitude": 43.587795,
+      "longitude": 39.716901,
+      "road_distances": {"Морской вокзал": 850}
+    },
+    {
+      "type": "Stop",
+      "name": "Морской вокзал",
+      "latitude": 43.581969,
+      "longitude": 39.719848,
+      "road_distances": {"Ривьерский мост": 850}
     }
+  ],
+  "stat_requests": [
+    { "id": 1, "type": "Stop", "name": "Ривьерский мост" },
+    { "id": 2, "type": "Bus", "name": "114" }
+  ]
+}
 
-    // Check the next token
-    if (*it == '[') {
-        ++it;
-            Array array;
-            while (*it != ']') {
-                array.push_back(LoadNode(input));
-                // Skip comma and whitespace
-                while (std::isspace(*it) || *it == ',') {
-                    ++it;
-                }
-            }
-            ++it; // Skip ']'
-            return Node(std::move(array));
-    } else if (*it == '{') {
-        ++it;
-            Dict map;
-            while (*it != '}') {
-                // Парсим ключ (строку)
-                std::string key; // = LoadString(input);
-                ++it;
-                    //std::string str;
-                    while (*it != '"' && it != std::istreambuf_iterator<char>()) {
-                        if (*it == '\\') {
-                            ++it;
-                            switch (*it) {
-                                case '"': key += '"'; break;
-                                case '\\': key += '\\'; break;
-                                case '/': key += '/'; break;
-                                case 'b': key += '\b'; break;
-                                case 'f': key += '\f'; break;
-                                case 'n': key += '\n'; break;
-                                case 'r': key += '\r'; break;
-                                case 't': key += '\t'; break;
-                                default: throw ParsingError("Invalid escape sequence");
-                            }
-                        } else {
-                            key += *it;
-                        }
-                        ++it;
-                    }
-                    if (*it != '"') {
-                        throw ParsingError("Unexpected end of string");
-                    }
-                    ++it;
+/*
+Описание базы маршрутов
+Массив base_requests содержит элементы двух типов: маршруты и остановки. Они перечисляются в произвольном порядке.
+Пример описания остановки:
+*/
+{
+  "type": "Stop",
+  "name": "Электросети",
+  "latitude": 43.598701,
+  "longitude": 39.730623,
+  "road_distances": {
+    "Улица Докучаева": 3000,
+    "Улица Лизы Чайкиной": 4300
+  }
+}
+/*
+type — строка, равная "Stop". Означает, что словарь описывает остановку;
+name — название остановки;
+latitude и longitude — широта и долгота остановки — числа с плавающей запятой;
+road_distances — словарь, задающий дорожное расстояние от этой остановки до соседних.
+Каждый ключ в этом словаре — название соседней остановки, значение — целочисленное расстояние в метрах
+*/
 
-                // Пропускаем двоеточие
-                if (*it != ':') {
-                    throw ParsingError("Expected ':' after key");
-                }
-                ++it;
+// Пример описания автобусного маршрута:
+{
+  "type": "Bus",
+  "name": "14",
+  "stops": [
+    "Улица Лизы Чайкиной",
+    "Электросети",
+    "Улица Докучаева",
+    "Улица Лизы Чайкиной"
+  ],
+  "is_roundtrip": true
+}
 
-                // Парсим значение
-                Node value = LoadNode(input);
+/*
+type — строка "Bus". Означает, что словарь описывает автобусный маршрут;
+name — название маршрута;
+stops — массив с названиями остановок, через которые проходит маршрут.
+У кольцевого маршрута название последней остановки дублирует название первой.
+Например: ["stop1", "stop2", "stop3", "stop1"];
+is_roundtrip — значение типа bool. true, если маршрут кольцевой.
+*/
 
-                map[std::move(key)] = std::move(value);
+// Формат запросов к транспортному справочнику и ответов на них
+// Запросы хранятся в массиве stat_requests. В ответ на них программа должна вывести в stdout JSON-массив ответов:
+{
+  "base_requests": [],
+  "stat_requests": []
+}
 
-                // Пропускаем запятую, если она есть
-                if (*it == ',') {
-                    ++it;
-                } else if (*it != '}') {
-                    throw ParsingError("Expected ',' or '}'");
-                }
-            }
-            ++it; // Пропускаем закрывающую фигурную скобку
-            return Node(map);
-    } else if (*it == '"') {
-        ++it;
-            std::string str;
-            while (*it != '"' && it != std::istreambuf_iterator<char>()) {
-                if (*it == '\\') {
-                    ++it;
-                    switch (*it) {
-                        case '"': str += '"'; break;
-                        case '\\': str += '\\'; break;
-                        case '/': str += '/'; break;
-                        case 'b': str += '\b'; break;
-                        case 'f': str += '\f'; break;
-                        case 'n': str += '\n'; break;
-                        case 'r': str += '\r'; break;
-                        case 't': str += '\t'; break;
-                        default: throw ParsingError("Invalid escape sequence");
-                    }
-                } else {
-                    str += *it;
-                }
-                ++it;
-            }
-            if (*it != '"') {
-                throw ParsingError("Unexpected end of string");
-            }
-            ++it;
-            return Node(std::move(str));
-    } else if (std::isdigit(*it) || *it == '-') {
-        // Handle numbers
-        std::string number;
-        while (std::isdigit(*it) || *it == '.' || *it == 'e' || *it == 'E' || *it == '-' || *it == '+') {
-            number += *it;
-            ++it;
-        }
-        try {
-            return Node(std::stod(number));
-        } catch (const std::exception& e) {
-            throw ParsingError("Invalid number");
-        }
-    } else if (*it == 't' || *it == 'f' || *it == 'n') {
-        // Handle booleans and null
-        std::string token;
-        while (std::isalpha(*it)) {
-            token += *it;
-            ++it;
-        }
-        if (token == "true") {
-            return Node(true);
-        } else if (token == "false") {
-            return Node(false);
-        } else if (token == "null") {
-            return Node(nullptr);
-        } else {
-            throw ParsingError("Invalid token");
-        }
-    } else {
-        throw ParsingError("Invalid JSON token");
-    }
+[
+  { /* ответ на первый запрос */ },
+  { /* ответ на второй запрос */ },
+  // ...
+  { /* ответ на последний запрос */ }
+]
+
+/*
+Каждый запрос — словарь с обязательными ключами id и type.
+Они задают уникальный числовой идентификатор запроса и его тип.
+В словаре могут быть и другие ключи, специфичные для конкретного типа запроса.
+В выходном JSON-массиве на каждый запрос stat_requests должен быть ответ
+в виде словаря с обязательным ключом request_id.
+Значение ключа должно быть равно id соответствующего запроса.
+В словаре возможны и другие ключи, специфичные для конкретного типа ответа.
+Порядок следования ответов на запросы в выходном массиве должен совпадать
+с порядком запросов в массиве stat_requests.
+*/
+
+/*
+Получение информации о маршруте
+Формат запроса:
+*/
+// Ключ type имеет значение “Bus”. По нему можно определить, что это запрос на получение информации о маршруте.
+{
+  "id": 12345678,
+  "type": "Bus",
+  "name": "14"
+} 
+// Ключ name задаёт название маршрута, для которого приложение должно вывести статистическую информацию.
+// Ответ на этот запрос должен быть дан в виде словаря:
+{
+  "curvature": 2.18604,
+  "request_id": 12345678,
+  "route_length": 9300,
+  "stop_count": 4,
+  "unique_stop_count": 3
+}
+/*
+Ключи словаря:
+curvature — извилистость маршрута.
+Она равна отношению длины дорожного расстояния маршрута к длине географического расстояния. Число типа double;
+request_id — должен быть равен id соответствующего запроса Bus. Целое число;
+route_length — длина дорожного расстояния маршрута в метрах, целое число;
+stop_count — количество остановок на маршруте;
+unique_stop_count — количество уникальных остановок на маршруте.
+Например, на кольцевом маршруте с остановками A, B, C, A четыре остановки. Три из них уникальные.
+На некольцевом маршруте с остановками A, B и C пять остановок (A, B, C, B, A). Три из них уникальные.
+Если в справочнике нет маршрута с указанным названием, ответ должен быть таким:
+*/
+{
+  "request_id": 12345678,
+  "error_message": "not found"
+}
+// Получение информации об остановке
+// Формат запроса:
+{
+  "id": 12345,
+  "type": "Stop",
+  "name": "Улица Докучаева"
+} 
+// Ключ name задаёт название остановки.
+// Ответ на запрос:
+{
+  "buses": [
+      "14", "22к"
+  ],
+  "request_id": 12345
+} 
+/*
+Значение ключей ответа:
+buses — массив названий маршрутов, которые проходят через эту остановку. Названия отсортированы в лексикографическом порядке.
+request_id — целое число, равное id соответствующего запроса Stop.
+Если в справочнике нет остановки с переданным названием, ответ на запрос должен быть такой:
+*/
+{
+  "request_id": 12345,
+  "error_message": "not found"
 }

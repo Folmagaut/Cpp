@@ -9,6 +9,24 @@
 
 namespace json {
 
+// Контекст вывода, хранит ссылку на поток вывода и текущий отсуп
+struct PrintContext {
+    std::ostream& out;
+    int indent_step = 4;
+    int indent = 0;
+
+    void PrintIndent() const {
+        for (int i = 0; i < indent; ++i) {
+            out.put(' ');
+        }
+    }
+
+    // Возвращает новый контекст вывода с увеличенным смещением
+    PrintContext Indented() const {
+        return {out, indent_step, indent_step + indent};
+    }
+};
+
 class Node;
 class Document;
 
@@ -79,24 +97,24 @@ Document Load(std::istream& input);
 
 // ---------------- Print Node Value -----------------------
 // Шаблон, подходящий для вывода double и int
-void PrintValue(const int value, std::ostream& out);
+void PrintValue(const int value, const PrintContext& context);
 
-void PrintValue(const double value, std::ostream& out);
+void PrintValue(const double value, const PrintContext& context);
 
 // Перегрузка функции PrintValue для вывода значений null
-void PrintValue(std::nullptr_t, std::ostream& out);
+void PrintValue(std::nullptr_t, const PrintContext& context);
 
-void PrintValue(const std::string&, std::ostream& out);
+void PrintValue(const std::string&, const PrintContext& context);
 
-void PrintValue(const bool, std::ostream& out);
+void PrintValue(const bool, const PrintContext& context);
 
-void PrintValue(const Array&, std::ostream& out);
+void PrintValue(const Array&, const PrintContext& context);
 
-void PrintValue(const Dict&, std::ostream& out);
+void PrintValue(const Dict&, const PrintContext& context);
 
 //----------------------------------------------------------
 
-void PrintNode(const Node& node, std::ostream& out);
+void PrintNode(const Node& node, const PrintContext& context);
 
 void Print(const Document& doc, std::ostream& out);
 
