@@ -15,7 +15,7 @@ std::string LoadString(std::istream& input) {
     }
     // Проверяем, что первый символ - двойная кавычка
     if (*it != '"') {
-        throw ParsingError("Expected '\"' at the beginning of the string");
+        throw ParsingError("Expected '\"' at the beginning of the string"); //return ""s;
     }
     ++it;
 
@@ -96,7 +96,14 @@ Node LoadArray(std::istream& input) {
 Node LoadDict(std::istream& input) {
     std::istreambuf_iterator<char> it(input);
     ++it;
-        Dict map;
+    while (std::isspace(*it)) {
+        ++it;
+    }
+    Dict map;
+    if (*it == '}') {
+        ++it;
+        return Node(std::move(map));
+    }
         while (*it != '}') {
             // Пропуск пробельных символов
             while (std::isspace(*it)) {
@@ -163,7 +170,7 @@ Node LoadNode(std::istream& input) {
             throw ParsingError("Invalid bool or null value");
         }
     } else {
-        throw ParsingError("Invalid JSON format");
+        return nullptr; //throw ParsingError("Invalid JSON format");
     }
 }
 
@@ -373,7 +380,7 @@ void PrintNode(const Node& node, const PrintContext& context) {
 }
 
 void Print(const Document& doc, std::ostream& out) {
-    PrintContext context{out};
+    PrintContext context{out, 4, 4};
     PrintNode(doc.GetRoot(), context);
 }
 

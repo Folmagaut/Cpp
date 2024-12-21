@@ -1,7 +1,7 @@
 #pragma once
 
 #include <deque>
-// #include <functional> // ?
+#include <map>
 #include <set>
 #include <string>
 #include <string_view>
@@ -27,10 +27,20 @@ public:
     void AddBus(const std::string_view bus_number, const std::vector<const Stop*>& bus_stops , bool is_roundtrip);
     const Stop* FindStop(const std::string_view stop_name) const;
     const Bus* FindBus(const std::string_view bus_number) const;
-    const RouteInfo RouteInformation(const std::string_view bus_number) const;
-    const std::set<std::string>& GetBusesAtStop(std::string_view stop_name) const;
+    //const RouteInfo RouteInformation(const std::string_view bus_number) const;
+    //const std::set<std::string>& GetBusesAtStop(std::string_view stop_name) const;
     void SetDistanceBetweenStops(const Stop* point_a, const Stop* point_b, const int distance);
     int GetDistanceBetweenStops(const Stop* point_a, const Stop* point_b) const;
+
+    size_t UniqueStopsCount(const std::string_view bus_number) const;
+
+    const std::unordered_map<std::string_view, Stop*>& GetStopNameToStop() const;
+
+    const std::deque<Stop>& GetAllStops() const;
+
+    const std::map<std::string_view, const Bus*> GetSortedAllBuses() const;
+
+    const std::map<std::string_view, const Stop*> GetSortedAllStops() const;
 
 private:
     std::deque<Stop> all_stops_;
@@ -39,7 +49,7 @@ private:
     std::unordered_map<std::string_view, Stop*> stopname_to_stop_;
     std::unordered_map<std::pair<const Stop*, const Stop*>, int, Hasher> distances_between_stops_;
 
-    size_t UniqueStopsCount(const std::string_view bus_number) const;
+    //size_t UniqueStopsCount(const std::string_view bus_number) const;
 };
 
 } // transport_catalogue

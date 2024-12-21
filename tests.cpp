@@ -1,99 +1,184 @@
-#pragma once
+#include <algorithm>
+#include <iostream>
+#include <numeric>
+#include <optional>
+#include <string>
+#include <vector>
+#include "log_duration.h"
+using namespace std;
 
-#include "transport_catalogue.h"
-#include "json.h"
-
-namespace transport_catalogue {
-
-class JsonReader {
+template <typename Iterator>
+class IteratorRange {
 public:
-    void Read(std::istream& input_stream, TransportCatalogue& catalogue);
+    IteratorRange(Iterator begin, Iterator end)
+            : first(begin)
+            , last(end) {
+    }
+
+    Iterator begin() const {
+        return first;
+    }
+
+    Iterator end() const {
+        return last;
+    }
 
 private:
-    void ProcessBaseRequest(const json::Node& request, TransportCatalogue& catalogue);
-    void ProcessStatRequest(const json::Node& request, TransportCatalogue& catalogue, std::ostream& output_stream);
+    Iterator first, last;
 };
 
-} // namespace transport_catalogue
+struct Person {
+    string name;
+    int age, income;
+    bool is_male;
+};
 
-#include "json_reader.h"
+vector<Person> ReadPeople(istream& input) {
+    int count;
+    input >> count;
 
-namespace transport_catalogue {
-
-void JsonReader::Read(std::istream& input_stream, TransportCatalogue& catalogue) {
-    json::Document doc = json::Load(input_stream);
-    const json::Array& base_requests = doc.GetRoot().AsMap().at("base_requests").AsArray();
-    const json::Array& stat_requests = doc.GetRoot().AsMap().at("stat_requests").AsArray();
-
-    for (const json::Node& request : base_requests) {
-        ProcessBaseRequest(request, catalogue);
+    vector<Person> result(count);
+    for (Person& p : result) {
+        char gender;
+        input >> p.name >> p.age >> p.income >> gender;
+        p.is_male = gender == 'M';
     }
 
-    for (const json::Node& request : stat_requests) {
-        ProcessStatRequest(request, catalogue, std::cout);
-    }
+    return result;
 }
 
-void JsonReader::ProcessBaseRequest(const json::Node& request, TransportCatalogue& catalogue) {
-    const std::string& type = request.AsMap().at("type").AsString();
-
-    if (type == "Bus") {
-        const std::string& bus_name = request.AsMap().at("name").AsString();
-        const json::Array& stops = request.AsMap().at("stops").AsArray();
-        bool is_roundtrip = request.AsMap().at("is_roundtrip").AsBool();
-
-        std::vector<const Stop*> bus_stops;
-        for (const json::Node& stop_name_node : stops) {
-            const std::string& stop_name = stop_name_node.AsString();
-            const Stop* stop = catalogue.FindStop(stop_name);
-            if (!stop) {
-                // Handle error: stop not found
-            }
-            bus_stops.push_back(stop);
-        }
-
-        catalogue.AddBus(bus_name, bus_stops, is_roundtrip);
-    } else if (type == "Stop") {
-        const std::string& stop_name = request.AsMap().at("name").AsString();
-        const double latitude = request.AsMap().at("latitude").AsDouble();
-        const double longitude = request.AsMap().at("longitude").AsDouble();
-        geo::Coordinates coordinates = {latitude, longitude};
-
-        catalogue.AddStop(stop_name, coordinates);
-
-        const json::Dict& road_distances = request.AsMap().at("road_distances").AsMap();
-        for (const auto& [other_stop_name, distance] : road_distances) {
-            const Stop* other_stop = catalogue.FindStop(other_stop_name);
-            if (!other_stop) {
-                // Handle error: stop not found
-            }
-            catalogue.SetDistanceBetweenStops(catalogue.FindStop(stop_name), other_stop, distance);
-        }
+template <typename Iter>
+optional<string> FindMostPopularName(IteratorRange<Iter> range) {
+    if (range.begin() == range.end()) {
+        return nullopt;
     } else {
-        // Handle error: invalid request type
+        sort(range.begin(), range.end(), [](const Person& lhs, const Person& rhs) {
+            return lhs.name < rhs.name;
+        });
+        const string* most_popular_name = &range.begin()->name;
+        int count = 1;
+        for (auto i = range.begin(); i != range.end();) {
+            auto same_name_end = find_if_not(i, range.end(), [i](const Person& p) {
+                return p.name == i->name;
+            });
+            const auto cur_name_count = distance(i, same_name_end);
+            if (cur_name_count > count || (cur_name_count == count && i->name < *most_popular_name)) {
+                count = cur_name_count;
+                most_popular_name = &i->name;
+            }
+            i = same_name_end;
+        }
+        return *most_popular_name;
     }
 }
 
-void JsonReader::ProcessStatRequest(const json::Node& request, TransportCatalogue& catalogue, std::ostream& output_stream) {
-    const int id = request.AsMap().at("id").AsInt();
-    const std::string& type = request.AsMap().at("type").AsString();
-    const std::string& name = request.AsMap().at("name").AsString();
+struct StatsData {
+    optional<string> most_popular_male_name;
+    optional<string> most_popular_female_name;
+    vector<int> cumulative_wealth;
+    vector<Person> sorted_by_age;
+};
 
-    if (type == "Stop") {
-        const Stop* stop = catalogue.FindStop(name);
-        if (!stop) {
-            // Handle error: stop not found
+void InitMostPopularNames(StatsData& stat_data, vector<Person>& people) {
+    IteratorRange males{people.begin(), partition(people.begin(), people.end(),
+                                                  [](const Person& p) {
+                                                      return p.is_male;
+                                                  })};
+    IteratorRange females{males.end(), people.end()};
+
+    // По мере обработки запросов список людей не меняется, так что мы можем
+    // один раз найти самые популярные женское и мужское имена
+    stat_data.most_popular_male_name = FindMostPopularName(males);
+    stat_data.most_popular_female_name = FindMostPopularName(females);
+}
+
+void InitWealth(StatsData& stat_data, vector<Person>& people) {
+    // Запросы WEALTHY можно тоже обрабатывать за О(1), один раз отсортировав всех
+    // людей по достатку и посчитав массив префиксных сумм
+    sort(people.begin(), people.end(),
+         [](const Person& lhs, const Person& rhs) {
+             return lhs.income > rhs.income;
+         });
+
+    auto& wealth = stat_data.cumulative_wealth;
+    wealth.resize(people.size());
+
+    if (!people.empty()) {
+        wealth[0] = people[0].income;
+        for (size_t i = 1; i < people.size(); ++i) {
+            wealth[i] = wealth[i - 1] + people[i].income;
         }
-        const std::set<std::string>& buses = catalogue.GetBusesAtStop(name);
-        // Print the result to output_stream
-    } else if (type == "Bus") {
-        const Bus* bus = catalogue.FindBus(name);
-        if (!bus) {
-            // Handle error: bus not found
-        }
-        const RouteInfo& route_info = catalogue.RouteInformation(name);
-        // Print the result to output_stream
     }
 }
 
-} // namespace transport_catalogue
+void InitSortedByAge(StatsData& stat_data, vector<Person> people) {
+    sort(people.begin(), people.end(),
+         [](const Person& lhs, const Person& rhs) {
+             return lhs.age < rhs.age;
+         });
+    stat_data.sorted_by_age = move(people);
+}
+
+StatsData BuildStatsData(vector<Person> people) {
+    StatsData result;
+
+    InitMostPopularNames(result, people);
+    InitWealth(result, people);
+    InitSortedByAge(result, people);
+
+    return result;
+}
+
+void ProceedAgeCommand(const StatsData& stat_data) {
+    int adult_age;
+    cin >> adult_age;
+
+    auto adult_begin = lower_bound(stat_data.sorted_by_age.begin(), stat_data.sorted_by_age.end(), adult_age,
+                                   [](const Person& lhs, int age) {
+                                       return lhs.age < age;
+                                   });
+
+    cout << "There are "s << distance(adult_begin, stat_data.sorted_by_age.end())
+         << " adult people for maturity age "s << adult_age << '\n';
+}
+
+void ProceedWealthyCommand(const StatsData& stat_data) {
+    int count;
+    cin >> count;
+    cout << "Top-"s << count << " people have total income "s << stat_data.cumulative_wealth[count - 1] << '\n';
+}
+
+void ProceedPopularNameCommand(const StatsData& stat_data) {
+    char gender;
+    cin >> gender;
+    const auto& most_popular_name
+            = gender == 'M' ? stat_data.most_popular_male_name : stat_data.most_popular_female_name;
+    if (most_popular_name) {
+        cout << "Most popular name among people of gender "s << gender << " is "s << *most_popular_name << '\n';
+    } else {
+        cout << "No people of gender "s << gender << '\n';
+    }
+}
+
+int main() {
+    // Основной проблемой исходного решения было то, что в нём случайно изменялись
+    // входные данные. Чтобы гарантировать, что этого не произойдёт, мы организовываем код
+    // так, чтобы в месте обработки запросов были видны только константные данные.
+    //
+    // Для этого всю их предобработку мы вынесли в отдельную функцию, результат которой
+    // сохраняем в константной переменной.
+    {
+    LOG_DURATION("Time = "s);
+    const StatsData stats = BuildStatsData(ReadPeople(cin));
+
+    for (string command; cin >> command;) {
+        if (command == "AGE"s) {
+            ProceedAgeCommand(stats);
+        } else if (command == "WEALTHY"s) {
+            ProceedWealthyCommand(stats);
+        } else if (command == "POPULAR_NAME"s) {
+            ProceedPopularNameCommand(stats);
+        }
+    }
+    }
+}

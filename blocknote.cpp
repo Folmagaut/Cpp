@@ -1,160 +1,108 @@
-{
-  "base_requests": [
-    {
-      "type": "Bus",
-      "name": "114",
-      "stops": ["Морской вокзал", "Ривьерский мост"],
-      "is_roundtrip": false
-    },
-    {
-      "type": "Stop",
-      "name": "Ривьерский мост",
-      "latitude": 43.587795,
-      "longitude": 39.716901,
-      "road_distances": {"Морской вокзал": 850}
-    },
-    {
-      "type": "Stop",
-      "name": "Морской вокзал",
-      "latitude": 43.581969,
-      "longitude": 39.719848,
-      "road_distances": {"Ривьерский мост": 850}
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <numeric>
+#include <string>
+#include <vector>
+
+#include "log_duration.h"
+
+using namespace std;
+
+struct Person {
+    string name;
+    int age, income;
+    bool is_male;
+};
+
+vector<Person> ReadPeople(istream& input) {
+    int count;
+    input >> count;
+
+    vector<Person> result(count);
+    for (Person& p : result) {
+        char gender;
+        input >> p.name >> p.age >> p.income >> gender;
+        p.is_male = gender == 'M';
     }
-  ],
-  "stat_requests": [
-    { "id": 1, "type": "Stop", "name": "Ривьерский мост" },
-    { "id": 2, "type": "Bus", "name": "114" }
-  ]
+    return result;
 }
 
-/*
-Описание базы маршрутов
-Массив base_requests содержит элементы двух типов: маршруты и остановки. Они перечисляются в произвольном порядке.
-Пример описания остановки:
-*/
-{
-  "type": "Stop",
-  "name": "Электросети",
-  "latitude": 43.598701,
-  "longitude": 39.730623,
-  "road_distances": {
-    "Улица Докучаева": 3000,
-    "Улица Лизы Чайкиной": 4300
-  }
-}
-/*
-type — строка, равная "Stop". Означает, что словарь описывает остановку;
-name — название остановки;
-latitude и longitude — широта и долгота остановки — числа с плавающей запятой;
-road_distances — словарь, задающий дорожное расстояние от этой остановки до соседних.
-Каждый ключ в этом словаре — название соседней остановки, значение — целочисленное расстояние в метрах
-*/
-
-// Пример описания автобусного маршрута:
-{
-  "type": "Bus",
-  "name": "14",
-  "stops": [
-    "Улица Лизы Чайкиной",
-    "Электросети",
-    "Улица Докучаева",
-    "Улица Лизы Чайкиной"
-  ],
-  "is_roundtrip": true
+string MostPopularName(const map<string, size_t>& names) {
+    pair<string, size_t> most_popular_name = {""s, 0};
+    for (const auto& name : names) {
+        if (name.second > most_popular_name.second) {
+            most_popular_name = name;
+        }
+    }
+    return most_popular_name.first;
 }
 
-/*
-type — строка "Bus". Означает, что словарь описывает автобусный маршрут;
-name — название маршрута;
-stops — массив с названиями остановок, через которые проходит маршрут.
-У кольцевого маршрута название последней остановки дублирует название первой.
-Например: ["stop1", "stop2", "stop3", "stop1"];
-is_roundtrip — значение типа bool. true, если маршрут кольцевой.
-*/
+int main() {
+    vector<Person> people = ReadPeople(cin);
 
-// Формат запросов к транспортному справочнику и ответов на них
-// Запросы хранятся в массиве stat_requests. В ответ на них программа должна вывести в stdout JSON-массив ответов:
 {
-  "base_requests": [],
-  "stat_requests": []
+    LOG_DURATION("Time = "s);
+    map<string, size_t> male_names;
+    map<string, size_t> fem_names;
+    for (const auto& person : people) {
+        if (person.is_male) {
+            male_names[person.name] += 1;
+        } else {
+            fem_names[person.name] += 1;
+        }
+    }
+
+    vector<size_t> wealth(people.size());
+    size_t wealth_counter = 0;
+    size_t income = 0;
+    sort(people.begin(), people.end(), 
+                [](const Person& lhs, const Person& rhs) {
+                return lhs.income > rhs.income;
+                });
+    for (const auto& person : people) {
+        income += person.income;
+        wealth[wealth_counter] = income;
+        ++wealth_counter;
+    }
+
+    sort(people.begin(), people.end(), 
+                [](const Person& lhs, const Person& rhs) {
+                return lhs.age < rhs.age;
+                });
+
+    for (string command; cin >> command;) {
+        
+        if (command == "AGE"s) {
+            int adult_age;
+            cin >> adult_age;
+
+            auto adult_begin = lower_bound(people.begin(), people.end(), adult_age, 
+            	[](const Person& lhs, int age) {
+                return lhs.age < age;
+            });
+
+            cout << "There are "s << distance(adult_begin, people.end()) << " adult people for maturity age "s
+                 << adult_age << '\n';
+        } else if (command == "WEALTHY"s) {
+            int count;
+            cin >> count;
+            int total_income = 0;
+            if (count > 0) {
+                total_income = wealth[min(count - 1, static_cast<int>(people.size() - 1))];
+            }
+            cout << "Top-"s << count << " people have total income "s << total_income << '\n';
+        } else if (command == "POPULAR_NAME"s) {
+            char gender;
+            cin >> gender;
+            string most_popular_name;
+            if (gender == 'M') {
+                most_popular_name = MostPopularName(male_names);
+            } else {
+                most_popular_name = MostPopularName(fem_names);
+            }
+            cout << "Most popular name among people of gender "s << gender << " is "s << most_popular_name << '\n';
+        }
+    }
 }
-
-[
-  { /* ответ на первый запрос */ },
-  { /* ответ на второй запрос */ },
-  // ...
-  { /* ответ на последний запрос */ }
-]
-
-/*
-Каждый запрос — словарь с обязательными ключами id и type.
-Они задают уникальный числовой идентификатор запроса и его тип.
-В словаре могут быть и другие ключи, специфичные для конкретного типа запроса.
-В выходном JSON-массиве на каждый запрос stat_requests должен быть ответ
-в виде словаря с обязательным ключом request_id.
-Значение ключа должно быть равно id соответствующего запроса.
-В словаре возможны и другие ключи, специфичные для конкретного типа ответа.
-Порядок следования ответов на запросы в выходном массиве должен совпадать
-с порядком запросов в массиве stat_requests.
-*/
-
-/*
-Получение информации о маршруте
-Формат запроса:
-*/
-// Ключ type имеет значение “Bus”. По нему можно определить, что это запрос на получение информации о маршруте.
-{
-  "id": 12345678,
-  "type": "Bus",
-  "name": "14"
-} 
-// Ключ name задаёт название маршрута, для которого приложение должно вывести статистическую информацию.
-// Ответ на этот запрос должен быть дан в виде словаря:
-{
-  "curvature": 2.18604,
-  "request_id": 12345678,
-  "route_length": 9300,
-  "stop_count": 4,
-  "unique_stop_count": 3
-}
-/*
-Ключи словаря:
-curvature — извилистость маршрута.
-Она равна отношению длины дорожного расстояния маршрута к длине географического расстояния. Число типа double;
-request_id — должен быть равен id соответствующего запроса Bus. Целое число;
-route_length — длина дорожного расстояния маршрута в метрах, целое число;
-stop_count — количество остановок на маршруте;
-unique_stop_count — количество уникальных остановок на маршруте.
-Например, на кольцевом маршруте с остановками A, B, C, A четыре остановки. Три из них уникальные.
-На некольцевом маршруте с остановками A, B и C пять остановок (A, B, C, B, A). Три из них уникальные.
-Если в справочнике нет маршрута с указанным названием, ответ должен быть таким:
-*/
-{
-  "request_id": 12345678,
-  "error_message": "not found"
-}
-// Получение информации об остановке
-// Формат запроса:
-{
-  "id": 12345,
-  "type": "Stop",
-  "name": "Улица Докучаева"
-} 
-// Ключ name задаёт название остановки.
-// Ответ на запрос:
-{
-  "buses": [
-      "14", "22к"
-  ],
-  "request_id": 12345
-} 
-/*
-Значение ключей ответа:
-buses — массив названий маршрутов, которые проходят через эту остановку. Названия отсортированы в лексикографическом порядке.
-request_id — целое число, равное id соответствующего запроса Stop.
-Если в справочнике нет остановки с переданным названием, ответ на запрос должен быть такой:
-*/
-{
-  "request_id": 12345,
-  "error_message": "not found"
 }

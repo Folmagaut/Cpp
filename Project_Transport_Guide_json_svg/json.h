@@ -119,15 +119,3 @@ void PrintNode(const Node& node, const PrintContext& context);
 void Print(const Document& doc, std::ostream& out);
 
 }  // namespace json
-
-/* json::Node LoadNode(std::istream& input);
-
-std::string LoadString(std::istream& input);
-
-json::Node LoadStringNode(std::istream& input);
-
-json::Node LoadNumber(std::istream& input);
-
-json::Node LoadArray(std::istream& input);
-
-json::Node LoadDict(std::istream& input); */

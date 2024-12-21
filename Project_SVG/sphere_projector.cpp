@@ -1,27 +1,19 @@
-/*
- * В этом файле вы можете разместить код, отвечающий за визуализацию карты маршрутов в формате SVG.
- * Визуализация маршртутов вам понадобится во второй части итогового проекта.
- * Пока можете оставить файл пустым.
- */
-#pragma once
+#include "geo.h"
+#include "svg.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <optional>
 #include <vector>
 
-#include "transport_catalogue.h"
-#include "json_reader.h"
-#include "svg.h"
-
 inline const double EPSILON = 1e-6;
-bool IsZero(double value);
+bool IsZero(double value) {
+    return std::abs(value) < EPSILON;
+}
 
 class SphereProjector {
 public:
-    SphereProjector() = default;
     // points_begin и points_end задают начало и конец интервала элементов geo::Coordinates
     template <typename PointInputIt>
     SphereProjector(PointInputIt points_begin, PointInputIt points_end,
@@ -87,37 +79,28 @@ private:
     double zoom_coeff_ = 0;
 };
 
-struct RenderSettings {
-    double width = 0.0; // от 0 до 100000
-    double height = 0.0; // от 0 до 100000
-    double padding = 0.0; // не меньше 0 и не меньше min(width, height)/2
-    double line_width = 0.0; // 0 ... 100000
-    double stop_radius = 0.0; // 0 ... 100000
-    int bus_label_font_size = 0; // 0 ... 100000
-    svg::Point bus_label_offset = {0.0, 0.0}; // Массив двух double. Задаёт значения dx и dy SVG-элемента <text>. от –100000 до 100000
-    int stop_label_font_size = 0; // 0...100000
-    svg::Point stop_label_offset = {0.0, 0.0}; // Массив двух double. Задаёт значения dx и dy SVG-элемента <text>. от –100000 до 100000
-    svg::Color underlayer_color = { svg::NoneColor }; // цвет подложки
-    double underlayer_width = 0.0; // Задаёт значение атрибута stroke-width элемента <text>. Вещественное число в диапазоне от 0 до 100000.
-    std::vector<svg::Color> color_palette{};
-};
+int main() {
+    using namespace std;
 
-class MapRenderer {
-public:
-    explicit MapRenderer(const transport_catalogue::TransportCatalogue& catalogue, const JsonReader& doc);
-
-    void RenderBusLine(const std::string_view bus, svg::ObjectContainer& container, size_t& color_index) const;
-    void RenderBusLabel(const std::string_view bus, const svg::Point& point, svg::ObjectContainer& container, size_t& color_index) const;
-    void RenderStop(const std::string_view stop, svg::ObjectContainer& container) const;
-    void RenderStopLabel(const std::string_view stop, const svg::Point& point, svg::ObjectContainer& container) const;
+    const double WIDTH = 600.0;
+    const double HEIGHT = 400.0;
+    const double PADDING = 50.0;
     
-    SphereProjector sphere_projector_;
-private:
-    const transport_catalogue::TransportCatalogue& catalogue_;
-    const JsonReader& doc_;
-    // Настройки рендера
-    RenderSettings render_settings_;
-    
+    // Точки, подлежащие проецированию
+    vector<geo::Coordinates> geo_coords = {
+        {43.587795, 39.716901}, {43.581969, 39.719848}, {43.598701, 39.730623},
+        {43.585586, 39.733879}, {43.590317, 39.746833}
+    };
 
-    svg::Color ParseColor(const json::Node& color_node) const;
-};
+    // Создаём проектор сферических координат на карту
+    const SphereProjector proj{
+        geo_coords.begin(), geo_coords.end(), WIDTH, HEIGHT, PADDING
+    };
+
+    // Проецируем и выводим координаты
+    for (const auto &geo_coord: geo_coords) {
+        const svg::Point screen_coord = proj(geo_coord);
+        cout << '(' << geo_coord.lat << ", "sv << geo_coord.lng << ") -> "sv;
+        cout << '(' << screen_coord.x << ", "sv << screen_coord.y << ')' << endl;
+    }
+}

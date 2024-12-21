@@ -12,22 +12,22 @@
 
 #include "geo.h"
 #include "json_reader.h"
+#include "request_handler.h"
 
 using namespace std::literals;
-void JsonReader::FillCatalogueWithRequests(/* std::istream& input_stream,  */transport_catalogue::TransportCatalogue& catalogue) {
-    //json::Document doc = json::Load(input_stream);
+void JsonReader::FillCatalogueWithRequests(transport_catalogue::TransportCatalogue& catalogue) {
     const json::Array& base_requests = input_doc_.GetRoot().AsMap().at("base_requests"s).AsArray();
-    const json::Array& stat_requests = input_doc_.GetRoot().AsMap().at("stat_requests"s).AsArray();
+
     std::vector<transport_catalogue::Distance> distances = {};
 
     for (const json::Node& request : base_requests) {
-        std::string stop = "Stop"s;
-        ProcessBaseRequest(request, stop, catalogue, distances);
+        std::string request_type = "Stop"s;
+        ProcessBaseRequest(request, request_type, catalogue, distances);
     }
 
     for (const json::Node& request : base_requests) {
-        std::string stop = "Bus"s;
-        ProcessBaseRequest(request, stop, catalogue, distances);
+        std::string request_type = "Bus"s;
+        ProcessBaseRequest(request, request_type, catalogue, distances);
     }
 
     for (const auto& distance : distances) {
@@ -35,18 +35,6 @@ void JsonReader::FillCatalogueWithRequests(/* std::istream& input_stream,  */tra
         const transport_catalogue::Stop* pnt_b = catalogue.FindStop(distance.point_b_);
         catalogue.SetDistanceBetweenStops(pnt_a, pnt_b, distance.distance_);
     }
-
-    std::cout << "["s << std::endl;
-    bool is_first = true;
-    for (const json::Node& request : stat_requests) {
-        if (!is_first) {
-            std::cout << ","s << std::endl;
-        }
-        is_first = false;
-        ProcessStatRequest(request, catalogue, std::cout);
-    }
-    std::cout << std::endl;
-    std::cout << "]"s << std::endl;
 }
 
 void JsonReader::ProcessBaseRequest(const json::Node& request, const std::string& request_type, transport_catalogue::TransportCatalogue& catalogue,
@@ -75,48 +63,16 @@ void JsonReader::ProcessBaseRequest(const json::Node& request, const std::string
             const std::string& stop_name = stop_name_node.AsString();
             const transport_catalogue::Stop* stop = catalogue.FindStop(stop_name);
             if (!stop) {
-                // Handle error: stop not found
+                // Обработка ошибки: stop not found
             }
             bus_stops.push_back(stop);
         }
         catalogue.AddBus(bus_name, bus_stops, is_roundtrip);
     } else {
-        // Handle error: invalid request type
+        // Обработка ошибки: invalid request type
     }
 }
 
-void JsonReader::ProcessStatRequest(const json::Node& request, transport_catalogue::TransportCatalogue& catalogue, std::ostream& output_stream) {
-    const int id = request.AsMap().at("id"s).AsInt();
-    const std::string& type = request.AsMap().at("type"s).AsString();
-    const std::string& name = request.AsMap().at("name"s).AsString();
-
-    json::Dict response;
-    response["request_id"s] = id;
-
-    if (type == "Stop"s) {
-        const transport_catalogue::Stop* stop = catalogue.FindStop(name);
-        if (stop) {
-            const std::set<std::string>& buses = catalogue.GetBusesAtStop(name);
-            response["buses"s] = json::Array(buses.begin(), buses.end());
-        } else {
-            response["error_message"s] = "not found"s;
-        }
-    } else if (type == "Bus"s) {
-        const transport_catalogue::Bus* bus = catalogue.FindBus(name);
-        if (bus) {
-            const transport_catalogue::RouteInfo& route_info = catalogue.RouteInformation(name);
-            response["curvature"s] = route_info.curvature_;
-            response["route_length"s] = route_info.route_length_;
-            response["stop_count"s] = static_cast<int>(route_info.all_stops_counter_);
-            response["unique_stop_count"s] = static_cast<int>(route_info.unique_stops_counter_);
-        } else {
-            response["error_message"s] = "not found"s;
-        }
-    } else {
-        // Handle invalid request type
-        response["error_message"s] = "invalid request type"s;
-    }
-    json::PrintContext context{output_stream};
-
-    json::PrintValue(response, context);
+const json::Document& JsonReader::GetInputDoc() const {
+    return input_doc_;
 }

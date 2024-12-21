@@ -1,3 +1,4 @@
+#include <map>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -52,47 +53,28 @@ size_t TransportCatalogue::UniqueStopsCount(const std::string_view bus_number) c
     return unique_stops.size();
 }
 
-const RouteInfo TransportCatalogue::RouteInformation(const std::string_view bus_number) const {
-    RouteInfo route_info = {};
-    const Bus* bus = FindBus(bus_number);
-
-    if (bus == nullptr) {
-        throw std::invalid_argument("Bus is not found"s);
-    }
-    if (bus->is_roundtrip) {
-        route_info.all_stops_counter_ = bus->bus_stops_.size();
-    } else {
-        route_info.all_stops_counter_ = bus->bus_stops_.size() * 2 - 1;
-    }
-    
-    double geo_route_length = 0.0;
-    double route_length = 0.0;
-
-    for (size_t it = 0; it < bus->bus_stops_.size() - 1; ++it) {
-        const Stop* point_a = bus->bus_stops_[it];
-        const Stop* point_b = bus->bus_stops_[it + 1];
-        if (it == bus->bus_stops_.size() - 1) {
-            point_b = bus->bus_stops_[0];
-            //++it;
-        }
-        if (bus->is_roundtrip) {
-            route_length += GetDistanceBetweenStops(point_a, point_b);
-            geo_route_length += ComputeDistance(point_a->coordinates_, point_b->coordinates_);
-        } else {
-            route_length += GetDistanceBetweenStops(point_a, point_b) + GetDistanceBetweenStops(point_b, point_a);
-            geo_route_length += ComputeDistance(point_a->coordinates_, point_b->coordinates_) * 2;
-        }
-    }
-
-    route_info.unique_stops_counter_ = UniqueStopsCount(bus_number);
-    route_info.route_length_ = route_length;
-    route_info.curvature_ = route_length / geo_route_length;
-
-    return route_info;
+const std::unordered_map<std::string_view, Stop*>& TransportCatalogue::GetStopNameToStop() const {
+    return stopname_to_stop_;
 }
 
-const std::set<std::string>& TransportCatalogue::GetBusesAtStop(std::string_view stop_name) const {
-    return stopname_to_stop_.at(stop_name)->buses_at_stop_;
+const std::deque<Stop>& TransportCatalogue::GetAllStops() const {
+    return all_stops_;
+}
+
+const std::map<std::string_view, const Bus*> TransportCatalogue::GetSortedAllBuses() const {
+    std::map<std::string_view, const Bus*> buses_sorted;
+    for (const auto& bus : busname_to_bus_) {
+        buses_sorted.emplace(bus);
+    }
+    return buses_sorted;
+}
+
+const std::map<std::string_view, const Stop*> TransportCatalogue::GetSortedAllStops() const {
+    std::map<std::string_view, const Stop*> stops_sorted;
+    for (const auto& stop : stopname_to_stop_) {
+        stops_sorted.emplace(stop);
+    }
+    return stops_sorted;
 }
 
 void TransportCatalogue::SetDistanceBetweenStops(const Stop* point_a, const Stop* point_b, const int distance) {

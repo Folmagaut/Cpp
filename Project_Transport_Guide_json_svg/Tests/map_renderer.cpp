@@ -36,7 +36,6 @@ MapRenderer::MapRenderer(const transport_catalogue::TransportCatalogue& catalogu
     }
 
     std::vector<geo::Coordinates> coords;
-    coords.reserve(catalogue_.GetAllStops().size());
     for (const auto& stop : catalogue_.GetAllStops()) {
         if (!stop.buses_at_stop_.empty()) {
             coords.push_back(stop.coordinates_);
@@ -71,22 +70,25 @@ svg::Color MapRenderer::ParseColor(const json::Node& color_node) const {
     throw std::runtime_error("Invalid color format"s);
 }
 
-// ... вспомогательные методы
 
-void MapRenderer::RenderBusLine(const std::string_view bus, svg::ObjectContainer& container, size_t& color_index) const {
-    size_t const size = render_settings_.color_palette.size();
-    auto curr_color = render_settings_.color_palette[color_index % size];
+
+// ... вспомогательные методы
+int index = 0;
+void MapRenderer::RenderBusLine(const std::string_view bus, svg::ObjectContainer& container) const {
     svg::Polyline line;
+    size_t const size = render_settings_.color_palette.size();
+    auto curr_color = render_settings_.color_palette[index%size];
+    index += 1;
     const auto& current_bus = catalogue_.FindBus(bus);
     line.SetFillColor(svg::NoneColor);
-    line.SetStrokeColor(curr_color); // Здесь была ужасная функция для получения цвета автобуса
+    line.SetStrokeColor(curr_color); // Функция для получения цвета автобуса
     line.SetStrokeWidth(render_settings_.line_width);
     line.SetStrokeLineCap(svg::StrokeLineCap::ROUND);
     line.SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
     
     std::vector<const transport_catalogue::Stop*> current_bus_stops{current_bus->bus_stops_.begin(), current_bus->bus_stops_.end()};
     if (current_bus->is_roundtrip == false) {
-        auto pos = current_bus_stops.end(); // если итератор заранее не обозначить, а ниже в insert просто написать current_bus_stops.end(), то я ловлю ошибку
+        auto pos = current_bus_stops.end(); // если итератор заранее не обозначить, а ниже в insert просто написать current_bus_stops.end(), то будет ошибка
         current_bus_stops.insert(pos, std::next(current_bus->bus_stops_.rbegin()), current_bus->bus_stops_.rend());
     }
     
@@ -94,76 +96,17 @@ void MapRenderer::RenderBusLine(const std::string_view bus, svg::ObjectContainer
         line.AddPoint(sphere_projector_(stop->coordinates_));
     }
     container.Add(line);
-    color_index += 1;
 }
 
-void MapRenderer::RenderBusLabel(const std::string_view bus, const svg::Point& point, svg::ObjectContainer& container, size_t& color_index) const {
-    size_t const size = render_settings_.color_palette.size();
-    auto curr_color = render_settings_.color_palette[color_index % size];
-    svg::Text text;
-    svg::Text underlayer;
-    text.SetPosition(point);
-    text.SetOffset(render_settings_.bus_label_offset);
-    // Установка цвета, шрифта и других свойств текста
-    text.SetFontSize(render_settings_.bus_label_font_size);
-    text.SetFontFamily("Verdana"s);
-    text.SetFontWeight("bold"s);
-    text.SetData(catalogue_.FindBus(bus)->bus_number_);
-    text.SetFillColor(curr_color);
+svg::Document MapRenderer::RenderMap() const {
+    svg::Document svg;
+    svg::ObjectContainer& container = svg;
 
-    // underlayer
-    underlayer.SetPosition(point);
-    underlayer.SetOffset(render_settings_.bus_label_offset);
-    // Установка цвета, шрифта и других свойств подложкки
-    underlayer.SetFontSize(render_settings_.bus_label_font_size);
-    underlayer.SetFontFamily("Verdana"s);
-    underlayer.SetFontWeight("bold"s);
-    underlayer.SetData(catalogue_.FindBus(bus)->bus_number_);
-    // дополнительные настройки
-    underlayer.SetFillColor(render_settings_.underlayer_color);
-    underlayer.SetStrokeColor(render_settings_.underlayer_color);
-    underlayer.SetStrokeWidth(render_settings_.underlayer_width);
-    underlayer.SetStrokeLineCap(svg::StrokeLineCap::ROUND);
-    underlayer.SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
+    for (const auto& bus : catalogue_.GetSortedAllBuses()) {
+        if (!bus.second->bus_stops_.empty()) {
+            RenderBusLine(bus.first, container);
+        }
+    }
 
-    container.Add(underlayer);
-    container.Add(text);
-}
-
-// ... запас карман не тянет
-void MapRenderer::RenderStop(const std::string_view stop, svg::ObjectContainer& container) const {
-    svg::Circle circle;
-    circle.SetCenter(sphere_projector_(catalogue_.FindStop(stop)->coordinates_));
-    circle.SetRadius(render_settings_.stop_radius);
-    circle.SetFillColor("white");
-
-    container.Add(circle);
-}
-
-void MapRenderer::RenderStopLabel(const std::string_view stop, const svg::Point& point, svg::ObjectContainer& container) const {
-    svg::Text text;
-    svg::Text underlayer;
-    text.SetPosition(point);
-    text.SetOffset(svg::Point(render_settings_.stop_label_offset));
-    // Установка цвета, шрифта и других свойств текста
-    text.SetFontSize(render_settings_.stop_label_font_size);
-    text.SetFontFamily("Verdana"s);
-    text.SetData(catalogue_.FindStop(stop)->stop_name_);
-    text.SetFillColor("black");
-
-    // underlayer
-    underlayer.SetPosition(point);
-    underlayer.SetOffset(svg::Point(render_settings_.stop_label_offset));
-    // Установка цвета, шрифта и других свойств текста
-    underlayer.SetFontSize(render_settings_.stop_label_font_size);
-    underlayer.SetFontFamily("Verdana"s);
-    underlayer.SetData(catalogue_.FindStop(stop)->stop_name_);
-    underlayer.SetFillColor(render_settings_.underlayer_color);
-    underlayer.SetStrokeColor(render_settings_.underlayer_color);
-    underlayer.SetStrokeWidth(render_settings_.underlayer_width);
-    underlayer.SetStrokeLineCap(svg::StrokeLineCap::ROUND);
-    underlayer.SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
-
-    container.Add(underlayer);
-    container.Add(text);
+    return svg;
 }

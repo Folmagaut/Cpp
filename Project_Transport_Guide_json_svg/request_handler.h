@@ -12,24 +12,38 @@
 // Класс RequestHandler играет роль Фасада, упрощающего взаимодействие JSON reader-а
 // с другими подсистемами приложения.
 // См. паттерн проектирования Фасад: https://ru.wikipedia.org/wiki/Фасад_(шаблон_проектирования)
-/*
+#include <optional>
+#include <set>
+#include <string>
+#include <string_view>
+
+#include "json.h"
+#include "json_reader.h"
+#include "map_renderer.h"
+#include "transport_catalogue.h"
+
+
 class RequestHandler {
 public:
-    // MapRenderer понадобится в следующей части итогового проекта
-    RequestHandler(const TransportCatalogue& db, const renderer::MapRenderer& renderer);
+    RequestHandler(const transport_catalogue::TransportCatalogue& catalogue, const JsonReader& input_doc, const MapRenderer& renderer)
+        : catalogue_(catalogue), input_doc_(input_doc), renderer_(renderer) {
+    }
 
-    // Возвращает информацию о маршруте (запрос Bus)
-    std::optional<BusStat> GetBusStat(const std::string_view& bus_name) const;
+    void PrintStatRequest();
 
-    // Возвращает маршруты, проходящие через
-    const std::unordered_set<BusPtr>* GetBusesByStop(const std::string_view& stop_name) const;
-
-    // Этот метод будет нужен в следующей части итогового проекта
     svg::Document RenderMap() const;
 
 private:
     // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
-    const TransportCatalogue& db_;
-    const renderer::MapRenderer& renderer_;
+    const transport_catalogue::TransportCatalogue& catalogue_;
+    const JsonReader& input_doc_;
+    const MapRenderer& renderer_;
+
+    // Возвращает информацию о маршруте (запрос bus_number)
+    const transport_catalogue::RouteInfo RouteInformation(const std::string_view& bus_number) const;
+
+    // Возвращает маршруты, проходящие через
+    const std::set<std::string>& GetBusesAtStop(const std::string_view& stop_name) const;
+    
+    void ProcessStatRequest(const json::Node& request, std::ostream& output_stream);
 };
-*/

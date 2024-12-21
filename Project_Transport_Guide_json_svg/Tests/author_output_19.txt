@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1">
+  <polyline points="1233.47,34130.5 7812.86,1233.47 1233.47,34130.5" fill="none" stroke="rgb(140,220,61)" stroke-width="91334.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text fill="peru" stroke="peru" stroke-width="73402.6" stroke-linecap="round" stroke-linejoin="round" x="1233.47" y="34130.5" dx="-73677.8" dy="-70212" font-size="30504" font-family="Verdana" font-weight="bold">256</text>
+  <text fill="rgb(140,220,61)" x="1233.47" y="34130.5" dx="-73677.8" dy="-70212" font-size="30504" font-family="Verdana" font-weight="bold">256</text>
+  <text fill="peru" stroke="peru" stroke-width="73402.6" stroke-linecap="round" stroke-linejoin="round" x="7812.86" y="1233.47" dx="-73677.8" dy="-70212" font-size="30504" font-family="Verdana" font-weight="bold">256</text>
+  <text fill="rgb(140,220,61)" x="7812.86" y="1233.47" dx="-73677.8" dy="-70212" font-size="30504" font-family="Verdana" font-weight="bold">256</text>
+  <circle cx="7812.86" cy="1233.47" r="52155.9" fill="white"/>
+  <circle cx="1233.47" cy="34130.5" r="52155.9" fill="white"/>
+  <text fill="peru" stroke="peru" stroke-width="73402.6" stroke-linecap="round" stroke-linejoin="round" x="7812.86" y="1233.47" dx="-77837.7" dy="-45606.2" font-size="18223" font-family="Verdana">A</text>
+  <text fill="black" x="7812.86" y="1233.47" dx="-77837.7" dy="-45606.2" font-size="18223" font-family="Verdana">A</text>
+  <text fill="peru" stroke="peru" stroke-width="73402.6" stroke-linecap="round" stroke-linejoin="round" x="1233.47" y="34130.5" dx="-77837.7" dy="-45606.2" font-size="18223" font-family="Verdana">B</text>
+  <text fill="black" x="1233.47" y="34130.5" dx="-77837.7" dy="-45606.2" font-size="18223" font-family="Verdana">B</text>
+</svg>

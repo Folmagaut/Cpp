@@ -12,12 +12,9 @@
 
 #pragma once
 
-//#include <deque>
-// #include <functional> // ?
 #include <set>
 #include <string>
 #include <string_view>
-//#include <unordered_map>
 #include <vector>
 
 #include "geo.h"
