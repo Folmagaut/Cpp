@@ -1,6 +1,391 @@
 /*
 
-// моё
+
+
+// отели /////////////////////////////////////////////////////
+#include <iostream>
+#include <cstdint>
+#include <deque>
+#include <set>
+#include <string>
+
+using namespace std;
+
+struct BookingInfo {
+    int64_t time_;
+    string hotel_name_;
+    int client_id_;
+    int room_count_;
+};
+
+class HotelManager {
+public:
+    void Book(int64_t time, const string& hotel_name, int client_id, int room_count) {
+        BookingInfo bif = {time, hotel_name, client_id, room_count};
+        dobi_.push_back(move(bif));
+        current_time_ = time;
+    }
+
+    int ComputeClientCount(const string& hotel_name) {
+        BIFCounter();
+
+        set<int> clients_cnt;
+
+        for (const auto& bif : dobi_) {
+            if (bif.hotel_name_ == hotel_name) {
+                clients_cnt.insert(bif.client_id_);
+            }
+        }
+        return static_cast<int>(clients_cnt.size());
+    }
+
+    int ComputeRoomCount(const string& hotel_name) {
+        BIFCounter();
+        int room_cnt = 0;
+
+        for (const auto& bif : dobi_) {
+            if (bif.hotel_name_ == hotel_name) {
+                room_cnt += bif.room_count_;
+            }
+        }
+        return room_cnt;
+    }
+
+private:
+    int64_t current_time_ = 0;
+    deque<BookingInfo> dobi_;
+
+    void BIFCounter() {
+        for (auto& bif : dobi_) {
+            if (bif.time_ < current_time_ - 86399) {
+                dobi_.pop_front();
+            }
+        }
+    }
+};
+
+int main() {
+    HotelManager manager;
+
+    int query_count;
+    cin >> query_count;
+
+    for (int query_id = 0; query_id < query_count; ++query_id) {
+        string query_type;
+        cin >> query_type;
+
+        if (query_type == "BOOK") {
+            int64_t time;
+            cin >> time;
+            string hotel_name;
+            cin >> hotel_name;
+            int client_id, room_count;
+            cin >> client_id >> room_count;
+            manager.Book(time, hotel_name, client_id, room_count);
+        } else {
+            string hotel_name;
+            cin >> hotel_name;
+            if (query_type == "CLIENTS") {
+                cout << manager.ComputeClientCount(hotel_name) << "\n";
+            } else if (query_type == "ROOMS") {
+                cout << manager.ComputeRoomCount(hotel_name) << "\n";
+            }
+        }
+    }
+
+    return 0;
+}
+
+// unique_ptr//////////////////////////////////////////////////
+#include <cassert>
+#include <cstddef>  // нужно для nullptr_t
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+using namespace std;
+
+// Реализуйте шаблон класса UniquePtr
+template <typename T>
+class UniquePtr {
+private:
+    T* ptr_ = nullptr;
+public:
+    UniquePtr() = default;
+
+    explicit UniquePtr(T* ptr) : ptr_(ptr) {
+    }
+
+    UniquePtr(const UniquePtr&) = delete;
+
+    UniquePtr(UniquePtr&& other) noexcept : ptr_(other.ptr_) { 
+        other.ptr_ = nullptr; 
+    }
+
+    UniquePtr& operator=(const UniquePtr&) = delete;
+
+    UniquePtr& operator=(nullptr_t) {
+        delete ptr_;
+        ptr_ = nullptr;
+        return *this;
+    }
+
+    UniquePtr& operator=(UniquePtr&& other) noexcept { 
+        if (this != &other) { 
+            delete ptr_;
+            ptr_ = other.ptr_;
+            other.ptr_ = nullptr; 
+        } 
+        return *this; 
+    }
+
+    ~UniquePtr() {
+        delete ptr_;
+    }
+
+    T& operator*() const {
+        if (!ptr_) {
+            throw logic_error("Error: ptr_ is null"s);
+        }
+        return *ptr_;
+    }
+
+    T* operator->() const {
+        if (!ptr_) {
+            throw logic_error("Error: ptr_ is null"s);
+        }
+        return ptr_;
+    }
+
+    T* Release() {
+        T* ret_ptr = ptr_;
+        ptr_ = nullptr;
+        return ret_ptr;
+    }
+
+    void Reset(T* ptr) {
+        delete ptr_;
+        ptr_ = ptr;
+    }
+
+    void Swap(UniquePtr& other) noexcept {
+        std::swap(other.ptr_, ptr_);
+    }
+
+    T* Get() const {
+        return ptr_;
+    }
+};
+
+struct Item {
+    static int counter;
+    int value;
+    Item(int v = 0)
+        : value(v) 
+    {
+        ++counter;
+    }
+    Item(const Item& other)
+        : value(other.value) 
+    {
+        ++counter;
+    }
+    ~Item() {
+        --counter;
+    }
+};
+
+int Item::counter = 0;
+
+void TestLifetime() {
+    Item::counter = 0;
+    {
+        UniquePtr<Item> ptr(new Item);
+        assert(Item::counter == 1);
+
+        ptr.Reset(new Item);
+        assert(Item::counter == 1);
+    }
+    assert(Item::counter == 0);
+
+    {
+        UniquePtr<Item> ptr(new Item);
+        assert(Item::counter == 1);
+
+        auto rawPtr = ptr.Release();
+        assert(Item::counter == 1);
+
+        delete rawPtr;
+        assert(Item::counter == 0);
+    }
+    assert(Item::counter == 0);
+}
+
+void TestGetters() {
+    UniquePtr<Item> ptr(new Item(42));
+    assert(ptr.Get()->value == 42);
+    assert((*ptr).value == 42);
+    assert(ptr->value == 42);
+}
+
+int main() {
+    TestLifetime();
+    TestGetters();
+    std::cout << "Ok"s << std::endl;
+}
+
+//////////////////////////////////////////////
+// тема с мьютексами
+#include <cassert>
+#include <functional>
+#include <iostream>
+#include <mutex>
+#include <optional>
+#include <string>
+
+using namespace std;
+
+template <typename T>
+class LazyValue {
+public:
+    explicit LazyValue(function<T()> init) : init_func_(move(init)) {
+    }
+
+    bool HasValue() const {
+        //lock_guard<mutex> lock(mutex_);
+        return value_ != nullopt; 
+    }
+
+    const T& Get() const {
+        lock_guard<mutex> lock(mutex_);
+        if (!value_) {
+            value_ = init_func_();
+        }
+        return value_.value();
+    }
+
+private:
+    function<T()> init_func_;
+    mutable optional<T> value_;
+    mutable mutex mutex_;
+};
+
+void UseExample() {
+    const string big_string = "Giant amounts of memory"s;
+
+    LazyValue<string> lazy_string([&big_string] {
+        return big_string;
+    });
+
+    assert(!lazy_string.HasValue());
+    assert(lazy_string.Get() == big_string);
+    assert(lazy_string.Get() == big_string);
+}
+
+void TestInitializerIsntCalled() {
+    bool called = false;
+
+    {
+        LazyValue<int> lazy_int([&called] {
+            called = true;
+            return 0;
+        });
+    }
+    assert(!called);
+}
+
+int main() {
+    UseExample();
+    TestInitializerIsntCalled();
+    //cout << "Ok"s << endl;
+}
+
+///////////////////////////////////////////////////
+// подбор паролей с mutable кэш-словарём
+#include <iostream>
+#include <string>
+#include <unordered_map>
+
+using namespace std;
+
+template <typename Checker>
+class PasswordCracker {
+public:
+    PasswordCracker(Checker check, string key)
+        : check_(check)
+        , curr_check_key_(move(key))
+        , cached_passwords_()
+    {
+    }
+    void SetCheck(Checker check, string key) {
+        check_ = check;
+        curr_check_key_ = move(key);
+    }
+    string BruteForce() const {
+        // если готовый пароль есть в словаре, вернём его
+        auto result = cached_passwords_.find(curr_check_key_);
+        if (cached_passwords_.end() != result) {
+            return result->second;
+        }
+        // если готового пароля нет, перейдём к подбору
+        auto pass = BruteForceInternal(""s, 0);
+        // не забудем добавить новый пароль в словарь готовых паролей
+        cached_passwords_[move(curr_check_key_)] = pass;
+        return pass;
+    }
+private:
+    string BruteForceInternal(const string& begin, int n) const {
+        if (n == 5) {
+            return check_(begin) ? begin : ""s;
+        }
+        for (char c = 'A'; c != 'Z' + 1; ++c) {
+            string res = BruteForceInternal(begin + string({c}), n + 1);
+            if (!res.empty()) {
+                return res;
+            }
+        }
+        return {};
+    }
+    Checker check_;
+    string curr_check_key_;
+    //словарь для кеширования найденных паролей
+    mutable unordered_map<string, string> cached_passwords_;
+};
+
+class PasswordChecker {
+public:
+    PasswordChecker(string match)
+        : match_(match)
+    {
+    }
+    bool operator()(const string& s) const {
+        return s == match_;
+    }
+    void operator=(const PasswordChecker& other) {
+        match_ = other.match_;
+    }
+
+private:
+    string match_;
+};
+
+string GetShmandexPass(const PasswordCracker<PasswordChecker>& pass_cracker) {
+    // если раскомментировать код ниже, программа не скомпилируется
+    // PasswordChecker.check("BUY"s);
+    // pass_cracker.SetCheck(check);
+    return pass_cracker.BruteForce();
+}
+
+int main() {
+    PasswordChecker check("HELLO"s);
+    string key = "1"s;
+    PasswordCracker password_cracker(check, key);
+    cout << GetShmandexPass(password_cracker) << endl;
+    cout << GetShmandexPass(password_cracker) << endl;
+}
+
+//////////////////////////////////////////////////////
+// моё Константность объектов
 #include <algorithm>
 #include <iostream>
 #include <map>

@@ -1,108 +1,125 @@
-#include <algorithm>
 #include <iostream>
-#include <map>
-#include <numeric>
+#include <cstdint>
+#include <deque>
+#include <set>
 #include <string>
 #include <vector>
 
-#include "log_duration.h"
+class HotelProvider {
+public:
+    using BookingId = std::string;
+
+    struct BookingData {
+        std::string hotel_id;
+        std::string date_from;
+        std::string date_to;
+        int persons;
+    };
+
+    BookingId Book(const BookingData& data) {
+        using namespace std;
+        cerr << "Hotel::Book: "s << data.hotel_id << endl;
+        return "B1"s;
+    }
+
+    void Cancel(const BookingId& id) {
+        using namespace std;
+        cerr << "Cancel hotel booking "s << id << endl;
+    }
+};
+
+class FlightProvider {
+public:
+    using BookingId = std::string;
+
+    struct BookingData {
+        std::string flight_id;
+        std::string person;
+        std::string date;
+    };
+
+    BookingId Book(const BookingData& data) {
+        using namespace std;
+        counter_++;
+        if (1 < counter_) {
+            throw runtime_error("Overbooking"s);
+        }
+        cerr << "Flight::Book: "s << data.flight_id << endl;
+        return "F1"s;
+    }
+    void Cancel(const BookingId& id) {
+        using namespace std;
+        counter_--;
+        cerr << "Cancel flight "s << id << endl;
+    }
+private:
+    int counter_ = 0;
+};
+
+struct Trip {
+    std::vector<HotelProvider::BookingId> hotels;
+    std::vector<FlightProvider::BookingId> flights;
+};
+
+class TripManager {
+public:
+    using BookingId = std::string;
+
+    struct BookingData {
+        std::string person;
+        std::string city;
+        std::string date_from;
+        std::string date_to;
+    };
+
+    Trip Book(const BookingData& data) {
+        Trip trip;
+        using namespace std::literals;
+        // предположим, что это простейшая командировка,
+        // включающая в себя перелёт туда, проживание в гостинице 
+        // и перелёт обратно. Не будем писать обработку входящей информации,
+        // пока нам это не нужно.
+        // добавим блоки, чтобы имена переменных не конфликтовали
+        {
+            FlightProvider::BookingData flight_booking_data;
+            flight_booking_data.flight_id = "1"s;
+            trip.flights.push_back(flight_provider_.Book(flight_booking_data));
+        }
+        {
+            HotelProvider::BookingData hotel_booking_data;
+            hotel_booking_data.hotel_id = "2"s;
+            trip.hotels.push_back(hotel_provider_.Book(hotel_booking_data));
+        }
+        {
+            FlightProvider::BookingData flight_booking_data;
+            flight_booking_data.flight_id = "3"s;
+            trip.flights.push_back(flight_provider_.Book(flight_booking_data));
+        }
+        return trip;
+    }
+
+    void Cancel(Trip& trip) {
+        // отменяем бронирования у провайдеров
+        for (auto& id : trip.hotels) {
+            hotel_provider_.Cancel(id);
+        }
+        // чистим вектора в структуре trip
+        trip.hotels.clear();
+        for (auto& id : trip.flights) {
+            flight_provider_.Cancel(id);
+        }
+        trip.flights.clear();
+    }
+private:
+    HotelProvider hotel_provider_;
+    FlightProvider flight_provider_;
+};
 
 using namespace std;
 
-struct Person {
-    string name;
-    int age, income;
-    bool is_male;
-};
-
-vector<Person> ReadPeople(istream& input) {
-    int count;
-    input >> count;
-
-    vector<Person> result(count);
-    for (Person& p : result) {
-        char gender;
-        input >> p.name >> p.age >> p.income >> gender;
-        p.is_male = gender == 'M';
-    }
-    return result;
-}
-
-string MostPopularName(const map<string, size_t>& names) {
-    pair<string, size_t> most_popular_name = {""s, 0};
-    for (const auto& name : names) {
-        if (name.second > most_popular_name.second) {
-            most_popular_name = name;
-        }
-    }
-    return most_popular_name.first;
-}
-
 int main() {
-    vector<Person> people = ReadPeople(cin);
-
-{
-    LOG_DURATION("Time = "s);
-    map<string, size_t> male_names;
-    map<string, size_t> fem_names;
-    for (const auto& person : people) {
-        if (person.is_male) {
-            male_names[person.name] += 1;
-        } else {
-            fem_names[person.name] += 1;
-        }
-    }
-
-    vector<size_t> wealth(people.size());
-    size_t wealth_counter = 0;
-    size_t income = 0;
-    sort(people.begin(), people.end(), 
-                [](const Person& lhs, const Person& rhs) {
-                return lhs.income > rhs.income;
-                });
-    for (const auto& person : people) {
-        income += person.income;
-        wealth[wealth_counter] = income;
-        ++wealth_counter;
-    }
-
-    sort(people.begin(), people.end(), 
-                [](const Person& lhs, const Person& rhs) {
-                return lhs.age < rhs.age;
-                });
-
-    for (string command; cin >> command;) {
-        
-        if (command == "AGE"s) {
-            int adult_age;
-            cin >> adult_age;
-
-            auto adult_begin = lower_bound(people.begin(), people.end(), adult_age, 
-            	[](const Person& lhs, int age) {
-                return lhs.age < age;
-            });
-
-            cout << "There are "s << distance(adult_begin, people.end()) << " adult people for maturity age "s
-                 << adult_age << '\n';
-        } else if (command == "WEALTHY"s) {
-            int count;
-            cin >> count;
-            int total_income = 0;
-            if (count > 0) {
-                total_income = wealth[min(count - 1, static_cast<int>(people.size() - 1))];
-            }
-            cout << "Top-"s << count << " people have total income "s << total_income << '\n';
-        } else if (command == "POPULAR_NAME"s) {
-            char gender;
-            cin >> gender;
-            string most_popular_name;
-            if (gender == 'M') {
-                most_popular_name = MostPopularName(male_names);
-            } else {
-                most_popular_name = MostPopularName(fem_names);
-            }
-            cout << "Most popular name among people of gender "s << gender << " is "s << most_popular_name << '\n';
-        }
-    }
-}
+    TripManager tm;
+    // для нашего примера воспользуемся просто пустой структурой
+    auto trip = tm.Book({});
+    tm.Cancel(trip);
 }
