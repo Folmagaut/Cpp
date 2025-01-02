@@ -11,19 +11,12 @@ public:
     Trip(HotelProvider& hp, FlightProvider& fp) : hp_(hp) , fp_(fp) {
     }
     
-    Trip(const Trip& other): hp_(other.hp_), fp_(other.fp_), hotels(other.hotels), flights(other.flights) {
-    }
+    Trip(const Trip& other) = delete;
     
     Trip(Trip&& other) : hp_(other.hp_), fp_(other.fp_), hotels(std::move(other.hotels)), flights(std::move(other.flights)) {
     }
     
-    Trip& operator=(const Trip& other) {
-        hp_ = other.hp_;
-        fp_ = other.fp_;
-        hotels = other.hotels;
-        flights = other.flights;
-        return *this;
-    }
+    Trip& operator=(const Trip& other) = delete;
     
     Trip& operator=(Trip&& other) {
         hp_ = other.hp_;

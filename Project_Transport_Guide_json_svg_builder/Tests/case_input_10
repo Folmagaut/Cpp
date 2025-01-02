@@ -1,0 +1,186 @@
+{
+    "base_requests": [
+        {
+            "latitude": 55.6111,
+            "longitude": 37.2083,
+            "name": "A1",
+            "road_distances": {
+                "A2": 1000,
+                "A3": 1000
+            },
+            "type": "Stop"
+        },
+        {
+            "latitude": 55.5959,
+            "longitude": 37.2098,
+            "name": "A2",
+            "road_distances": {
+                "A3": 1000
+            },
+            "type": "Stop"
+        },
+        {
+            "latitude": 55.6328,
+            "longitude": 37.3333,
+            "name": "A3",
+            "road_distances": {
+
+            },
+            "type": "Stop"
+        },
+        {
+            "is_roundtrip": false,
+            "name": "B1",
+            "stops": [
+                "A1",
+                "A2"
+            ],
+            "type": "Bus"
+        },
+        {
+            "is_roundtrip": false,
+            "name": "B2",
+            "stops": [
+                "A2",
+                "A3"
+            ],
+            "type": "Bus"
+        }
+    ],
+    "render_settings": {
+        "bus_label_font_size": 23,
+        "bus_label_offset": [
+            6.059,
+            4.40063
+        ],
+        "color_palette": [
+            [
+                18,
+                15,
+                194,
+                0.166639
+            ],
+            [
+                138,
+                149,
+                252
+            ],
+            "aqua",
+            [
+                205,
+                20,
+                112
+            ],
+            [
+                42,
+                226,
+                158
+            ],
+            "lavender",
+            "ivory",
+            [
+                230,
+                215,
+                63
+            ],
+            [
+                82,
+                222,
+                96,
+                0.739556
+            ],
+            "purple",
+            [
+                114,
+                186,
+                12,
+                0.233612
+            ],
+            "thistle",
+            "tomato",
+            [
+                49,
+                38,
+                43
+            ],
+            [
+                172,
+                49,
+                241,
+                0.630948
+            ],
+            [
+                229,
+                178,
+                221,
+                0.159661
+            ],
+            "gold",
+            "brown",
+            [
+                142,
+                189,
+                231
+            ],
+            [
+                221,
+                109,
+                215
+            ],
+            [
+                143,
+                82,
+                44
+            ],
+            [
+                62,
+                253,
+                194
+            ],
+            [
+                97,
+                81,
+                153,
+                0.333103
+            ],
+            "maroon",
+            "ivory",
+            [
+                163,
+                228,
+                200
+            ],
+            "thistle",
+            [
+                224,
+                125,
+                105
+            ],
+            [
+                8,
+                95,
+                10,
+                0.386773
+            ]
+        ],
+        "height": 13.9913,
+        "line_width": 21.0031,
+        "padding": 0.159586,
+        "stop_label_font_size": 23,
+        "stop_label_offset": [
+            78.9934,
+            98.119
+        ],
+        "stop_radius": 16.0501,
+        "underlayer_color": "wheat",
+        "underlayer_width": 8.77057,
+        "width": 0.704064
+    },
+    "stat_requests": [
+        {
+            "id": 752033009,
+            "name": "A2",
+            "type": "Stop"
+        }
+    ]
+}
