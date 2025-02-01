@@ -1,90 +1,87 @@
 #include <algorithm>
 #include <iostream>
-#include <set>
 #include <string>
 #include <sstream>
 #include <string_view>
 #include <vector>
 
+
 using namespace std;
 
 class Domain {
 public:
-    // разработайте класс домена
-    // конструктор должен позволять конструирование из string, с сигнатурой определитесь сами
-    Domain(string_view domain) : domain_(domain) {
-        // Разделяем домен на части
-        size_t start = 0;
-        size_t pos;
-        while ((pos = domain.find('.', start)) != string::npos) {
-            parts_.emplace_back(domain.substr(start, pos - start));
-            start = pos + 1;
-        }
-        parts_.emplace_back(domain.substr(start));
-    }
-    // разработайте operator==
-    bool operator==(const Domain& other) const {
-        return domain_ == other.domain_;
+    Domain(string_view src) {
+        repr_ = string(src.rbegin(), src.rend()) + "."s;
     }
 
-    bool operator<(const Domain& other) const {
-        return domain_ < other.domain_;
+    bool IsSubdomain(const Domain& r) const {
+        return repr_.size() >= r.repr_.size() && repr_.substr(0, r.repr_.size()) == r.repr_;
     }
 
-    // разработайте метод IsSubdomain, принимающий другой домен и возвращающий true, если this его поддомен
-    bool IsSubdomain(const Domain& other) const {
-        if (parts_.size() > other.parts_.size()) {
-            return false;
-        }
-        for (size_t i = 0; i < parts_.size(); ++i) {
-            if (parts_[parts_.size() - 1 - i] != other.parts_[other.parts_.size() - 1 - i]) {
-                return false;
-            }
-        }
-        return true;
+    bool operator==(const Domain& r) const {
+        return repr_ == r.repr_;
     }
 
-    string GetDomain() const {
-        return domain_;
+    bool operator<(const Domain& r) const {
+        // сравниваем лексикографически, считая точку самым маленьким символом
+        return std::lexicographical_compare(repr_.begin(), repr_.end(), r.repr_.begin(), r.repr_.end(),
+                                            [](char l, char r) {
+                                                return (r != '.') && (l < r || l == '.');
+                                            });
     }
 
 private:
-    string domain_;
-    vector<string> parts_;
+    // repr_ содержит название домена, записанное задом наперёд, с приписанным в конец символом точки
+    string repr_;
 };
 
 class DomainChecker {
 public:
-    // конструктор должен принимать список запрещённых доменов через пару итераторов
-    DomainChecker(vector<Domain>::const_iterator begin, vector<Domain>::const_iterator end) {
-        for (auto it = begin; it != end; ++it) {
-            //forbidden_domains_.insert(it->GetDomain());
-            f_d_.insert(Domain(it->GetDomain()));
-        }
+    template <typename InputIt>
+    DomainChecker(InputIt begin, InputIt end) {
+        std::vector<Domain> all_domains(begin, end);
+        sort(all_domains.begin(), all_domains.end());
+        sorted_domains_ = AbsorbSubdomains(std::move(all_domains));
     }
-    // разработайте метод IsForbidden, возвращающий true, если домен запрещён
+
     bool IsForbidden(const Domain& domain) const {
-        auto it = f_d_.lower_bound(domain);
-        return it != f_d_.end() && it->IsSubdomain(domain);
+        auto iter = upper_bound(sorted_domains_.begin(), sorted_domains_.end(), domain);
+        if (iter == sorted_domains_.begin()) {
+            return false;
+        }
+
+        return domain.IsSubdomain(*prev(iter));
     }
 
 private:
-    //set<string> forbidden_domains_;
-    set<Domain> f_d_;
+    static vector<Domain> AbsorbSubdomains(vector<Domain> domains) {
+        domains.erase(unique(begin(domains), end(domains),
+                             [](const Domain& lhs, const Domain& rhs) {
+                                 return lhs.IsSubdomain(rhs) || rhs.IsSubdomain(lhs);
+                             }),
+                      end(domains));
+        return domains;
+    }
+
+private:
+    std::vector<Domain> sorted_domains_;
 };
 
-// разработайте функцию ReadDomains, читающую заданное количество доменов из стандартного входа
-vector<Domain> ReadDomains(istream& input, size_t count) {
-    vector<Domain> domains;
-    for (size_t i = 0; i < count; ++i) {
+std::vector<Domain> ReadDomains(istream& input, size_t n) {
+    std::vector<Domain> result_vector;
+    result_vector.reserve(n);
+
+    for (size_t i = 0; i < n; ++i) {
         string domain;
         getline(input, domain);
-        domains.emplace_back(domain);
+
+        result_vector.push_back(Domain(domain));
     }
-    return domains;
+
+    return result_vector;
 }
 
-template <typename Number>
+template<typename Number>
 Number ReadNumberOnLine(istream& input) {
     string line;
     getline(input, line);

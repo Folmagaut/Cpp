@@ -7,6 +7,13 @@
 using namespace std;
 
 int main() {
+#ifdef __GNUC__
+    std::cout << "GCC version: " << __VERSION__ << std::endl;
+#endif
+#ifdef __clang__
+    std::cout << "Using Clang instead of GCC" << std::endl;
+#endif
+
     Accountant ray;
     Wall wall(3.5, 2.45);
     Roof roof(5, 7);
