@@ -6,6 +6,7 @@
  * можете оставить его пустым.
  */
 
+// Изменения претерпели блоки формирования узлов Node типа Dict; они заменены на методы из json_builder
 #include <set>
 #include <stdexcept>
 #include <string>

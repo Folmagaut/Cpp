@@ -1,8 +1,9 @@
+#include <iostream>
+#include <string_view>
+
 #include "budget_manager.h"
 #include "parser.h"
 
-#include <iostream>
-#include <string_view>
 
 void ParseAndProcessQuery(BudgetManager& manager, std::string_view line) {
     auto query = ParseQuery(line);

@@ -1,3 +1,5 @@
+// без изменений с прошлого спринта
+
 #include <map>
 #include <stdexcept>
 #include <string>

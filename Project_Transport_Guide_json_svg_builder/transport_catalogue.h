@@ -1,3 +1,4 @@
+// без изменений с прошлого спринта
 #pragma once
 
 #include <deque>

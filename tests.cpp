@@ -1,5 +1,213 @@
 /*
 
+
+
+/////////////////////////////////////////////////
+#include <algorithm>
+#include <iostream>
+#include <random>
+#include <string>
+#include <vector>
+#include <unordered_map>
+
+#include "log_duration.h"
+
+using namespace std;
+
+class RandomContainer {
+public:
+    void Insert(int val) {
+        values_pool_.push_back(val);
+        index_map_[val] = values_pool_.size() - 1;
+    }
+    void Remove(int val) {
+        //values_pool_.erase(find(values_pool_.begin(), values_pool_.end(), val));
+        int index_to_remove = index_map_[val];
+        int last_element = values_pool_.back();
+        values_pool_[index_to_remove] = last_element;
+        index_map_[last_element] = index_to_remove;
+        values_pool_.pop_back();
+        index_map_.erase(val);
+    }
+    bool Has(int val) const {
+        //return find(values_pool_.begin(), values_pool_.end(), val) != values_pool_.end();
+        return index_map_.count(val) > 0;
+    }
+    int GetRand() const {
+        uniform_int_distribution<int> distr(0, values_pool_.size() - 1);
+        int rand_index = distr(engine_);
+        return values_pool_[rand_index];
+    }
+
+private:
+    vector<int> values_pool_;
+    unordered_map<int, int> index_map_;
+    mutable mt19937 engine_;
+};
+
+int main() {
+    RandomContainer container;
+    int query_num = 0;
+    cin >> query_num;
+    {
+        LOG_DURATION("Requests handling"s);
+        for (int query_id = 0; query_id < query_num; query_id++) {
+            string query_type;
+            cin >> query_type;
+            if (query_type == "INSERT"s) {
+                int value = 0;
+                cin >> value;
+                container.Insert(value);
+            } else if (query_type == "REMOVE"s) {
+                int value = 0;
+                cin >> value;
+                container.Remove(value);
+            } else if (query_type == "HAS"s) {
+                int value = 0;
+                cin >> value;
+                if (container.Has(value)) {
+                    cout << "true"s << endl;
+                } else {
+                    cout << "false"s << endl;
+                }
+            } else if (query_type == "RAND"s) {
+                cout << container.GetRand() << endl;
+            }
+        }
+    }
+}
+
+/////////////////////////////////////////
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+class RouteManager {
+public:
+    void AddRoute(int start, int finish) {
+        reachable_lists_[start].insert(finish);
+        reachable_lists_[finish].insert(start);
+    }
+    int FindNearestFinish(int start, int finish) const {
+        int result = abs(start - finish);
+        if (!reachable_lists_.count(start)) {
+            return result;
+        }
+        const set<int>& reachable_stations = reachable_lists_.at(start);
+        const set<int>::const_iterator it = reachable_stations.lower_bound(finish);
+        if (it == reachable_stations.begin()) {
+            return min(result, abs(finish - *it));
+        }
+        const set<int>::const_iterator prev_it = std::prev(it);
+        if (it == reachable_stations.end() || abs(finish - *prev_it) <= abs(finish - *it)) {
+            return min(result, abs(finish - *prev_it));
+        }
+        else {
+            return min(result, abs(*it - finish));
+        }
+        return result;
+    }
+
+private:
+    map<int, set<int>> reachable_lists_;
+};
+
+int main() {
+    RouteManager routes;
+
+    int query_count;
+    cin >> query_count;
+
+    for (int query_id = 0; query_id < query_count; ++query_id) {
+        string query_type;
+        cin >> query_type;
+        int start, finish;
+        cin >> start >> finish;
+        if (query_type == "ADD"s) {
+            routes.AddRoute(start, finish);
+        } else if (query_type == "GO"s) {
+            cout << routes.FindNearestFinish(start, finish) << "\n"s;
+        }
+    }
+}
+
+//////////////////////////////////////////////
+#include <algorithm>
+#include <cassert>
+//#include <iostream>
+#include <optional>
+#include <string_view>
+#include <utility>
+#include <vector>
+
+using namespace std;
+
+// напишите функцию ComputeStatistics, принимающую 5 параметров:
+// два итератора, выходное значение для суммы, суммы квадратов и максимального элемента
+template <typename InputIt, typename OutSum, typename OutSqSum, typename OutMax>
+void ComputeStatistics(InputIt first, InputIt last, OutSum& out_sum, OutSqSum& out_sq_sum, OutMax& out_max) {
+    using Elem = std::decay_t<decltype(*first)>;
+    
+    constexpr bool is_sum_needed = !is_same_v<OutSum, const nullopt_t>;
+    constexpr bool is_sq_sum_needed = !is_same_v<OutSqSum, const nullopt_t>;
+    constexpr bool is_max_needed = !is_same_v<OutMax, const nullopt_t>;
+    auto sum = Elem();
+    auto sq_sum = Elem();
+    auto max = Elem();
+    if constexpr (is_sum_needed) sum = *first;
+    if constexpr (is_sq_sum_needed) sq_sum = *first * *first;
+    if constexpr (is_max_needed) max = *first;
+    while (first < last - 1) {
+        ++first;
+        if constexpr (is_sum_needed) sum += *first;
+        if constexpr (is_sq_sum_needed) sq_sum += *first * *first;
+        if constexpr (is_max_needed) max = max < *first ? *first : max;
+    }
+    if constexpr (is_sum_needed) out_sum = sum;
+    if constexpr (is_sq_sum_needed) out_sq_sum = sq_sum;
+    if constexpr (is_max_needed) out_max = max;
+}
+
+struct OnlySum {
+    int value;
+};
+
+OnlySum operator+(OnlySum l, OnlySum r) {
+    return {l.value + r.value};
+}
+OnlySum& operator+=(OnlySum& l, OnlySum r) {
+    return l = l + r;
+}
+
+int main() {
+    vector input = {1, 2, 3, 4, 5, 6};
+    int sq_sum;
+    std::optional<int> max;
+
+    // Переданы выходные параметры разных типов - std::nullopt_t, int и std::optional<int>
+    ComputeStatistics(input.begin(), input.end(), nullopt, sq_sum, max);
+
+    //cout << sq_sum << endl;
+    //cout << max << endl;
+
+    assert(sq_sum == 91 && max && *max == 6);
+
+    vector<OnlySum> only_sum_vector = {{100}, {-100}, {20}};
+    OnlySum sum;
+
+    // Поданы значения поддерживающие только суммирование, но запрошена только сумма
+    ComputeStatistics(only_sum_vector.begin(), only_sum_vector.end(), sum, nullopt, nullopt);
+
+    assert(sum.value == 20);
+}
+
+////////////////////////////////////////////////
 // тестовое 
 #include <algorithm>
 #include <iostream>

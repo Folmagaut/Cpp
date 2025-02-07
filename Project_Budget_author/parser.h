@@ -1,20 +1,22 @@
 #pragma once
 
-#include "budget_manager.h"
-#include "date.h"
-
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
+#include <unordered_map>
+
+#include "budget_manager.h"
+#include "date.h"
 
 struct ReadResult {
     void Print(std::ostream& out) const {
-        out << total_income << std::endl;
+        out << total.income - total.spend << std::endl;
     }
 
-    double total_income;
+    DayBudget total;
 };
 
 inline std::pair<std::string_view, std::optional<std::string_view>> SplitFirst(std::string_view input, char c) {
@@ -63,14 +65,14 @@ private:
 class ComputeQuery : public Query {
 public:
     using Query::Query;
-
+    virtual ~ComputeQuery() = default;
     [[nodiscard]] virtual ReadResult Process(const BudgetManager& budget) const = 0;
 
     void ProcessAndPrint(BudgetManager& budget, std::ostream& out) const override {
         Process(budget).Print(out);
     }
 
-    ~ComputeQuery() override = default;
+    //~ComputeQuery() override = default;
 };
 
 class ModifyQuery : public Query {
@@ -82,8 +84,8 @@ public:
     void ProcessAndPrint(BudgetManager& budget, std::ostream&) const override {
         Process(budget);
     }
-
-    ~ModifyQuery() override = default;
+    virtual ~ModifyQuery() = default;
+    //~ModifyQuery() override = default;
 };
 
 class QueryFactory {
@@ -100,4 +102,19 @@ inline std::unique_ptr<Query> ParseQuery(std::string_view line) {
 
     const auto& factory = QueryFactory::GetFactory(command);
     return factory.Construct(pconfig.value_or(std::string_view{}));
+}
+
+inline std::vector<std::unique_ptr<Query>> ReadQueries(std::istream& input) {
+    std::vector<std::unique_ptr<Query>> result;
+    std::string line;
+    std::getline(input, line);
+    const int query_count = std::stoi(line);
+    result.reserve(query_count);
+
+    for (int i = 0; i < query_count; ++i) {
+        std::getline(input, line);
+        result.push_back(ParseQuery(line));
+    }
+
+    return result;
 }

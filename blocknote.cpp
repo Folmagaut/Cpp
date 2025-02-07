@@ -1,103 +1,73 @@
 #include <algorithm>
 #include <iostream>
+#include <random>
 #include <string>
-#include <sstream>
-#include <string_view>
 #include <vector>
+#include <unordered_map>
 
+#include "log_duration.h"
 
 using namespace std;
 
-class Domain {
+class RandomContainer {
 public:
-    Domain(string_view src) {
-        repr_ = string(src.rbegin(), src.rend()) + "."s;
+    void Insert(int val) {
+        values_pool_.push_back(val);
+        index_map_[val] = values_pool_.size() - 1;
     }
-
-    bool IsSubdomain(const Domain& r) const {
-        return repr_.size() >= r.repr_.size() && repr_.substr(0, r.repr_.size()) == r.repr_;
+    void Remove(int val) {
+        //values_pool_.erase(find(values_pool_.begin(), values_pool_.end(), val));
+        int index_to_remove = index_map_[val];
+        int last_element = values_pool_.back();
+        values_pool_[index_to_remove] = last_element;
+        index_map_[last_element] = index_to_remove;
+        values_pool_.pop_back();
+        index_map_.erase(val);
     }
-
-    bool operator==(const Domain& r) const {
-        return repr_ == r.repr_;
+    bool Has(int val) const {
+        //return find(values_pool_.begin(), values_pool_.end(), val) != values_pool_.end();
+        return index_map_.count(val) > 0;
     }
-
-    bool operator<(const Domain& r) const {
-        // сравниваем лексикографически, считая точку самым маленьким символом
-        return std::lexicographical_compare(repr_.begin(), repr_.end(), r.repr_.begin(), r.repr_.end(),
-                                            [](char l, char r) {
-                                                return (r != '.') && (l < r || l == '.');
-                                            });
+    int GetRand() const {
+        uniform_int_distribution<int> distr(0, values_pool_.size() - 1);
+        int rand_index = distr(engine_);
+        return values_pool_[rand_index];
     }
 
 private:
-    // repr_ содержит название домена, записанное задом наперёд, с приписанным в конец символом точки
-    string repr_;
+    vector<int> values_pool_;
+    unordered_map<int, int> index_map_;
+    mutable mt19937 engine_;
 };
-
-class DomainChecker {
-public:
-    template <typename InputIt>
-    DomainChecker(InputIt begin, InputIt end) {
-        std::vector<Domain> all_domains(begin, end);
-        sort(all_domains.begin(), all_domains.end());
-        sorted_domains_ = AbsorbSubdomains(std::move(all_domains));
-    }
-
-    bool IsForbidden(const Domain& domain) const {
-        auto iter = upper_bound(sorted_domains_.begin(), sorted_domains_.end(), domain);
-        if (iter == sorted_domains_.begin()) {
-            return false;
-        }
-
-        return domain.IsSubdomain(*prev(iter));
-    }
-
-private:
-    static vector<Domain> AbsorbSubdomains(vector<Domain> domains) {
-        domains.erase(unique(begin(domains), end(domains),
-                             [](const Domain& lhs, const Domain& rhs) {
-                                 return lhs.IsSubdomain(rhs) || rhs.IsSubdomain(lhs);
-                             }),
-                      end(domains));
-        return domains;
-    }
-
-private:
-    std::vector<Domain> sorted_domains_;
-};
-
-std::vector<Domain> ReadDomains(istream& input, size_t n) {
-    std::vector<Domain> result_vector;
-    result_vector.reserve(n);
-
-    for (size_t i = 0; i < n; ++i) {
-        string domain;
-        getline(input, domain);
-
-        result_vector.push_back(Domain(domain));
-    }
-
-    return result_vector;
-}
-
-template<typename Number>
-Number ReadNumberOnLine(istream& input) {
-    string line;
-    getline(input, line);
-
-    Number num;
-    std::istringstream(line) >> num;
-
-    return num;
-}
 
 int main() {
-    const std::vector<Domain> forbidden_domains = ReadDomains(cin, ReadNumberOnLine<size_t>(cin));
-    DomainChecker checker(forbidden_domains.begin(), forbidden_domains.end());
-
-    const std::vector<Domain> test_domains = ReadDomains(cin, ReadNumberOnLine<size_t>(cin));
-    for (const Domain& domain : test_domains) {
-        cout << (checker.IsForbidden(domain) ? "Bad"sv : "Good"sv) << endl;
+    RandomContainer container;
+    int query_num = 0;
+    cin >> query_num;
+    {
+        LOG_DURATION("Requests handling"s);
+        for (int query_id = 0; query_id < query_num; query_id++) {
+            string query_type;
+            cin >> query_type;
+            if (query_type == "INSERT"s) {
+                int value = 0;
+                cin >> value;
+                container.Insert(value);
+            } else if (query_type == "REMOVE"s) {
+                int value = 0;
+                cin >> value;
+                container.Remove(value);
+            } else if (query_type == "HAS"s) {
+                int value = 0;
+                cin >> value;
+                if (container.Has(value)) {
+                    cout << "true"s << endl;
+                } else {
+                    cout << "false"s << endl;
+                }
+            } else if (query_type == "RAND"s) {
+                cout << container.GetRand() << endl;
+            }
+        }
     }
 }
