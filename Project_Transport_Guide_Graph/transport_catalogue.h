@@ -1,4 +1,3 @@
-// без изменений с прошлого спринта
 #pragma once
 
 #include <deque>
@@ -35,12 +34,6 @@ public:
     const std::deque<Stop>& GetAllStops() const;
     const std::map<std::string_view, const Bus*> GetSortedAllBuses() const;
     const std::map<std::string_view, const Stop*> GetSortedAllStops() const;
-
-    // Вообще, этот метод изначально и был здесь в приватной области
-    // но в прекоде задания сразу предложили перенести в RequestHandler этот метод
-    // так как он участвует в формировании ответов на запрос;
-    // единственное - мне пришлось его убрать его из приватной области,
-    // т. к. он нужен в RequestHandler
     const RouteInform RouteInformation(const std::string_view& bus_number) const;
 
 private:

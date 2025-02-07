@@ -19,7 +19,7 @@ inline double ComputeDistance(Coordinates from, Coordinates to) {
     if (from == to) {
         return 0;
     }
-    static const double dr = M_PI / 180.; // M_PI == 3.1415926535
+    static const double dr = 3.14159265358979323846 / 180.; // M_PI == 3.1415926535 - почему-то не компилируется с M_PI
     return acos(sin(from.lat * dr) * sin(to.lat * dr)
                 + cos(from.lat * dr) * cos(to.lat * dr) * cos(abs(from.lng - to.lng) * dr))
         * EARTH_RADIUS;

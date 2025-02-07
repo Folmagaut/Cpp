@@ -13,7 +13,6 @@
 // с другими подсистемами приложения.
 // См. паттерн проектирования Фасад: https://ru.wikipedia.org/wiki/Фасад_(шаблон_проектирования)
 
-// без изменений с прошлого спринта
 #include <optional>
 #include <set>
 #include <string>
@@ -30,7 +29,7 @@
 class RequestHandler {
 public:
 
-    RequestHandler(const transport_catalogue::TransportCatalogue& catalogue, const JsonReader& input_doc, const MapRenderer& renderer, const transport_catalogue::Router& router)
+    RequestHandler(const transport_catalogue::TransportCatalogue& catalogue, const JsonReader& input_doc, const MapRenderer& renderer, const transport_router::Router& router)
         : catalogue_(catalogue), input_doc_(input_doc), renderer_(renderer), router_(router) {
     }
 
@@ -43,11 +42,13 @@ private:
     const transport_catalogue::TransportCatalogue& catalogue_;
     const JsonReader& input_doc_;
     const MapRenderer& renderer_;
-    const transport_catalogue::Router& router_;
+    const transport_router::Router& router_;
 
     // Возвращает маршруты, проходящие через
     const std::set<std::string>& GetBusesAtStop(const std::string_view& stop_name) const;
+
     const std::optional<graph::Router<double>::RouteInfo> GetOptimalRoute(const std::string_view stop_from, const std::string_view stop_to) const;
+
     const graph::DirectedWeightedGraph<double>& GetRouterGraph() const;
     
     void ProcessStatRequest(const json::Node& request, std::ostream& output_stream);

@@ -1,11 +1,11 @@
 #include <string>
 #include "transport_router.h"
 
-namespace transport_catalogue {
+namespace transport_router {
 
 using namespace std::literals;
 
-const graph::DirectedWeightedGraph<double>& Router::BuildGraph(const TransportCatalogue& catalogue) {
+const graph::DirectedWeightedGraph<double>& Router::BuildGraph(const transport_catalogue::TransportCatalogue& catalogue) {
 	const auto& all_stops = catalogue.GetSortedAllStops();
 	const auto& all_buses = catalogue.GetSortedAllBuses();
 	graph::DirectedWeightedGraph<double> stops_graph(all_stops.size() * 2);
@@ -34,8 +34,8 @@ const graph::DirectedWeightedGraph<double>& Router::BuildGraph(const TransportCa
             size_t stops_count = stops.size();
             for (size_t i = 0; i < stops_count; ++i) {
                 for (size_t j = i + 1; j < stops_count; ++j) {
-                    const Stop* stop_from = stops[i];
-                    const Stop* stop_to = stops[j];
+                    const transport_catalogue::Stop* stop_from = stops[i];
+                    const transport_catalogue::Stop* stop_to = stops[j];
                     int dist_sum = 0;
                     int dist_sum_inverse = 0;
                     for (size_t k = i + 1; k <= j; ++k) {
@@ -73,13 +73,8 @@ const graph::DirectedWeightedGraph<double>& Router::GetGraph() const {
 	return graph_;
 }
 
-const json::Node& Router::GetRoutingSettings() const {
+const json::Dict& Router::GetRoutingSettings() const {
     return input_doc_.GetInputDoc().GetRoot().AsDict().at("routing_settings"s).AsDict();
-}
-
-transport_catalogue::Router Router::FillRoutingSettings(const json::Node& settings) const {
-    transport_catalogue::Router routing_settings;
-    return transport_catalogue::Router{ settings.AsDict().at("bus_wait_time"s).AsInt(), settings.AsDict().at("bus_velocity"s).AsDouble() };
 }
 
 }

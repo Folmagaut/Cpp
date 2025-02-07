@@ -1,10 +1,3 @@
-/*
- * В этом файле вы можете разместить код, отвечающий за визуализацию карты маршрутов в формате SVG.
- * Визуализация маршртутов вам понадобится во второй части итогового проекта.
- * Пока можете оставить файл пустым.
- */
-
-// без изменений с прошлого спринта
 #pragma once
 
 #include <algorithm>
@@ -108,8 +101,6 @@ class MapRenderer {
 public:
     explicit MapRenderer(const transport_catalogue::TransportCatalogue& catalogue, const JsonReader& doc);
 
-    // Перенёс. На самом деле с этим методом та же история - его в прекоде было предложено вынести
-    // в RequestHandler. Непонятно, зачем вводить людей в заблуждение.
     svg::Document RenderMap() const;
 
 private:

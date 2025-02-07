@@ -1,17 +1,13 @@
-/*
- * Здесь можно разместить код наполнения транспортного справочника данными из JSON,
- * а также код обработки запросов к базе и формирование массива ответов в формате JSON
- */
-// без изменений с прошлого спринта
 #pragma once
+
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <vector>
 
-#include "transport_catalogue.h"
 #include "json.h"
+#include "transport_catalogue.h"
 
 class JsonReader {
 public:
