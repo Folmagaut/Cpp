@@ -8,6 +8,9 @@
 
 #include "json.h"
 #include "transport_catalogue.h"
+#include "transport_router.h"
+
+const double KM_PER_HOUR_TO_METER_PER_MINUTE_TRANSFER = 1000.0 / 60.0; // вынес как отдельную именованную константу
 
 class JsonReader {
 public:
@@ -17,6 +20,8 @@ public:
     void FillCatalogueWithRequests(transport_catalogue::TransportCatalogue& catalogue);
 
     const json::Document& GetInputDoc() const;
+
+    const transport_router::TransportRouterSettings GetRoutingSettings() const; // метод перенёс сюда из transport_router
 
 private:
     json::Document input_doc_;

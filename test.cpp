@@ -1,108 +1,179 @@
-#include <algorithm>
-#include <iostream>
-#include <set>
+/*
+Вам нужно изменить TransportRouter так, чтобы он возвращал детали маршрута непосредственно,
+а не позволял доступ к внутреннему графу. Затем нужно обновить RequestHandler,
+чтобы он использовал этот измененный интерфейс. Вот шаги и изменения в коде:
+
+1. Изменение TransportRouter:
+Удалите метод GetGraph() из transport_router.h и transport_router.cpp.
+Вместо этого измените FindRoute так, чтобы он возвращал структуру,
+содержащую всю необходимую информацию о маршруте в нужном формате.
+*/
+// transport_router.h
+#pragma once
+
+// ... (includes)
+
+namespace transport_router {
+
+// ... (TransportRouterSettings)
+
+struct RouteItem {
+    std::string type; // "Wait" или "Bus"
+    std::string stop_name; // Для "Wait"
+    std::string bus; // Для "Bus"
+    int span_count; // Для "Bus"
+    double time;
+};
+
+struct Route {
+    double total_time = 0.0;
+    std::vector<RouteItem> items;
+};
+
+class TransportRouter {
+public:
+    // ... (constructor)
+
+    std::optional<Route> FindRoute(const std::string_view stop_from, const std::string_view stop_to) const;
+
+private:
+    // ... (members)
+
+    const graph::DirectedWeightedGraph<double>& BuildGraph(const transport_catalogue::TransportCatalogue& catalogue);
+};
+
+} // namespace transport_router
+
+
+// transport_router.cpp
 #include <string>
-#include <sstream>
-#include <string_view>
-#include <vector>
+#include <algorithm> // для std::reverse
 
-using namespace std;
+// ... (includes)
 
-class Domain {
+namespace transport_router {
+
+// ... (BuildGraph)
+
+std::optional<Route> TransportRouter::FindRoute(const std::string_view stop_from, const std::string_view stop_to) const {
+    auto route_info = router_->BuildRoute(stop_ids_.at(std::string(stop_from)), stop_ids_.at(std::string(stop_to)));
+    if (!route_info) {
+        return std::nullopt;
+    }
+
+    Route route;
+    route.total_time = route_info->weight;
+
+    std::vector<graph::EdgeId> edges = route_info->edges;
+    if (!edges.empty()) {
+        std::reverse(edges.begin(), edges.end()); // Восстанавливаем порядок ребер
+
+        for (graph::EdgeId edge_id : edges) {
+            const auto& edge = graph_.GetEdge(edge_id);
+            RouteItem item;
+            if (edge.span_count == 0) {
+                item.type = "Wait";
+                item.stop_name = edge.name_of_bus;
+                item.time = edge.weight;
+            } else {
+                item.type = "Bus";
+                item.bus = edge.name_of_bus;
+                item.span_count = static_cast<int>(edge.span_count);
+                item.time = edge.weight;
+            }
+            route.items.push_back(item);
+        }
+    }
+    return route;
+}
+
+// ... остальной код
+} // namespace transport_router
+
+/////////////////////////////////////////////////////
+/*
+2. Изменение RequestHandler:
+
+Измените RequestHandler, чтобы он использовал новый метод FindRoute
+и формировал JSON ответ в требуемом формате.
+*/
+// request_handler.h
+#pragma once
+#include "transport_router.h"
+// ...
+
+class RequestHandler {
 public:
-    // разработайте класс домена
-    // конструктор должен позволять конструирование из string, с сигнатурой определитесь сами
-    Domain(string_view domain) : domain_(domain) {
-        reverse(domain_.begin(), domain_.end());
-        domain_.push_back('.');
-    }
-    // разработайте operator==
-    bool operator==(const Domain& other) const {
-        return domain_ == other.domain_;
-    }
+    // ...
 
-    bool operator<(const Domain& other) const {
-        return domain_ < other.domain_;
-    }
-
-    // разработайте метод IsSubdomain, принимающий другой домен и возвращающий true, если this его поддомен
-    bool IsSubdomain(const Domain& other) const {
-        if (other.domain_.size() > domain_.size()) {
-            return false;
-        }
-        auto contains_it = std::mismatch(other.domain_.begin(), other.domain_.end(), domain_.begin());
-        if (contains_it.first != other.domain_.end()) {
-            return false;
-        }
-        return true;
-    }
-
-    string GetDomain() const {
-        return domain_;
-    }
+    std::optional<transport_router::Route> GetRouteInfo(const std::string_view stop_from, const std::string_view stop_to) const;
 
 private:
-    string domain_;
-    //vector<string> parts_;
+    const transport_router::TransportRouter& router_;
+    // ...
 };
 
-class DomainChecker {
-public:
-    // конструктор должен принимать список запрещённых доменов через пару итераторов
-    DomainChecker(vector<Domain>::const_iterator begin, vector<Domain>::const_iterator end) : forbidden_domains_(begin, end) {
-        sort(forbidden_domains_.begin(), forbidden_domains_.end(), [](const Domain& lhs, const Domain& rhs) {
-            return lhs.GetDomain() < rhs.GetDomain();
-        });
-        end = std::unique(forbidden_domains_.begin(), forbidden_domains_.end(), [](const Domain& lhs, const Domain& rhs) {
-            return rhs.IsSubdomain(lhs);
-        });
-        forbidden_domains_.erase(end, forbidden_domains_.end());
-    }
-    // разработайте метод IsForbidden, возвращающий true, если домен запрещён
-    bool IsForbidden(const Domain& domain) const {
-        auto it = upper_bound(forbidden_domains_.begin(), forbidden_domains_.end(), domain, [](const Domain& lhs, const Domain& rhs){
-                    return lhs.GetDomain() < rhs.GetDomain();
-                });
-        if (it == forbidden_domains_.begin()) {
-            return false;
-        } else {
-            return domain.IsSubdomain(*prev(it));
+// request_handler.cpp
+#include "request_handler.h"
+// ...
+
+std::optional<transport_router::Route> RequestHandler::GetRouteInfo(const std::string_view stop_from, const std::string_view stop_to) const {
+    return router_.FindRoute(stop_from, stop_to);
+}
+
+// ...
+
+// request_handler.cpp (изменения внутри ProcessStatRequest)
+else if (type == "Route"s) {
+    const std::string_view stop_from = request.AsDict().at("from"s).AsString();
+    const std::string_view stop_to = request.AsDict().at("to"s).AsString();
+    const std::optional<transport_router::Route> route_info = GetRouteInfo(stop_from, stop_to); // Используем новый метод
+
+    if (!route_info) {
+        response = json::Builder{}
+            .StartDict()
+                .Key("request_id"s).Value(id)
+                .Key("error_message"s).Value("not found"s)
+            .EndDict()
+        .Build().AsDict();
+    } else {
+        json::Array items;
+        for (const auto& item : route_info->items) {
+            json::Dict route_item;
+            route_item["type"s] = item.type;
+            if (item.type == "Wait") {
+                route_item["stop_name"s] = item.stop_name;
+                route_item["time"s] = item.time;
+            } else {
+                route_item["bus"s] = item.bus;
+                route_item["span_count"s] = item.span_count;
+                route_item["time"s] = item.time;
+            }
+            items.push_back(route_item);
         }
-    }
 
-private:
-    //set<string> forbidden_domains_;
-    vector<Domain> forbidden_domains_;
-};
-
-// разработайте функцию ReadDomains, читающую заданное количество доменов из стандартного входа
-vector<Domain> ReadDomains(istream& input, size_t count) {
-    vector<Domain> domains;
-    for (size_t i = 0; i < count; ++i) {
-        string domain;
-        getline(input, domain);
-        domains.emplace_back(domain);
-    }
-    return domains;
-}
-
-template <typename Number>
-Number ReadNumberOnLine(istream& input) {
-    string line;
-    getline(input, line);
-
-    Number num;
-    std::istringstream(line) >> num;
-
-    return num;
-}
-
-int main() {
-    const std::vector<Domain> forbidden_domains = ReadDomains(cin, ReadNumberOnLine<size_t>(cin));
-    DomainChecker checker(forbidden_domains.begin(), forbidden_domains.end());
-
-    const std::vector<Domain> test_domains = ReadDomains(cin, ReadNumberOnLine<size_t>(cin));
-    for (const Domain& domain : test_domains) {
-        cout << (checker.IsForbidden(domain) ? "Bad"sv : "Good"sv) << endl;
+        response = json::Builder{}
+            .StartDict()
+                .Key("request_id"s).Value(id)
+                .Key("total_time"s).Value(route_info->total_time)
+                .Key("items"s).Value(items)
+            .EndDict()
+        .Build().AsDict();
     }
 }
+
+// ... (остальной код request_handler.cpp)
+/*
+Ключевые изменения:
+
+TransportRouter::FindRoute теперь возвращает структуру Route с элементами RouteItem,
+содержащими информацию в нужном формате.
+RequestHandler вызывает TransportRouter::FindRoute и формирует JSON ответ,
+используя новую структуру.
+Метод GetGraph() удален из TransportRouter.
+В RequestHandler::ProcessStatRequest изменена логика обработки запроса Route
+для использования новой структуры Route и формирования JSON ответа в требуемом формате.
+После этих изменений RequestHandler сможет получать всю необходимую информацию
+о маршруте и формировать JSON ответ в точности с требуемым форматом.
+Обязательно протестируйте эти изменения, чтобы убедиться, что все работает корректно.
+*/

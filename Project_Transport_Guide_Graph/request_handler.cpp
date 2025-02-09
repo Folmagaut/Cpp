@@ -22,6 +22,10 @@ const std::set<std::string>& RequestHandler::GetBusesAtStop(const std::string_vi
     return catalogue_.GetStopNameToStop().at(stop_name)->buses_at_stop_;
 }
 
+std::optional<transport_router::Route> RequestHandler::GetRouteInfo(const std::string_view stop_from, const std::string_view stop_to) const {
+    return router_.FindRoute(stop_from, stop_to);
+}
+
 void RequestHandler::ProcessStatRequest(const json::Node& request, std::ostream& output_stream) {
     const int id = request.AsDict().at("id"s).AsInt();
     const std::string& type = request.AsDict().at("type"s).AsString();
@@ -39,9 +43,9 @@ void RequestHandler::ProcessStatRequest(const json::Node& request, std::ostream&
     } else if (type == "Route"s) {
         const std::string_view stop_from = request.AsDict().at("from"s).AsString();
         const std::string_view stop_to = request.AsDict().at("to"s).AsString();
-        const std::optional<graph::Router<double>::RouteInfo> routing = GetOptimalRoute(stop_from, stop_to);
-        
-        if (!routing) {
+        const std::optional<transport_router::Route> route_info = GetRouteInfo(stop_from, stop_to); // Используем новый метод
+    
+        if (!route_info) {
             response = json::Builder{}
                 .StartDict()
                     .Key("request_id"s).Value(id)
@@ -50,39 +54,24 @@ void RequestHandler::ProcessStatRequest(const json::Node& request, std::ostream&
             .Build().AsDict();
         } else {
             json::Array items;
-            double total_time = 0.0;
-            items.reserve(routing.value().edges.size());
-            for (const graph::EdgeId& edge_id : routing.value().edges) {
-                const graph::Edge<double> edge = GetRouterGraph().GetEdge(edge_id);
-                if (edge.quality == 0) {
-                    items.emplace_back(json::Node(json::Builder{}
-                        .StartDict()
-                            .Key("stop_name"s).Value(edge.name)
-                            .Key("time"s).Value(edge.weight)
-                            .Key("type"s).Value("Wait"s)
-                        .EndDict()
-                    .Build()));
-
-                    total_time += edge.weight;
+            for (const auto& item : route_info->items) {
+                json::Dict route_item;
+                route_item["type"s] = item.type;
+                if (item.type == "Wait") {
+                    route_item["stop_name"s] = item.stop_name;
+                    route_item["time"s] = item.time;
+                } else {
+                    route_item["bus"s] = item.bus;
+                    route_item["span_count"s] = item.span_count;
+                    route_item["time"s] = item.time;
                 }
-                else {
-                    items.emplace_back(json::Node(json::Builder{}
-                        .StartDict()
-                            .Key("bus"s).Value(edge.name)
-                            .Key("span_count"s).Value(static_cast<int>(edge.quality))
-                            .Key("time"s).Value(edge.weight)
-                            .Key("type"s).Value("Bus"s)
-                        .EndDict()
-                    .Build()));
-
-                    total_time += edge.weight;
-                }
+                items.push_back(route_item);
             }
-
+    
             response = json::Builder{}
                 .StartDict()
                     .Key("request_id"s).Value(id)
-                    .Key("total_time"s).Value(total_time)
+                    .Key("total_time"s).Value(route_info->total_time)
                     .Key("items"s).Value(items)
                 .EndDict()
             .Build().AsDict();
@@ -158,10 +147,10 @@ void RequestHandler::PrintStatRequest() {
     std::cout << "]"s << std::endl;
 }
 
-const std::optional<graph::Router<double>::RouteInfo> RequestHandler::GetOptimalRoute(const std::string_view stop_from, const std::string_view stop_to) const {
+/* const std::optional<graph::Router<double>::RouteInfo> RequestHandler::GetOptimalRoute(const std::string_view stop_from, const std::string_view stop_to) const {
     return router_.FindRoute(stop_from, stop_to);
-}
+} */
 
-const graph::DirectedWeightedGraph<double>& RequestHandler::GetRouterGraph() const {
+/* const graph::DirectedWeightedGraph<double>& RequestHandler::GetRouterGraph() const {
     return router_.GetGraph();
-}
+} */

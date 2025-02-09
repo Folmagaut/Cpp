@@ -1,6 +1,5 @@
 #pragma once
 
-#include "json_reader.h"
 #include "router.h"
 #include "transport_catalogue.h"
 
@@ -10,30 +9,49 @@
 namespace transport_router {
 
 using namespace std::literals;
+// структуру создал, формирование настроек перенёс в метод класса JsonReader
+struct TransportRouterSettings {
+	int bus_wait_time_ = 0; // ожидание в минутах
+	double bus_speed_ = 0.0; // скорость в м/мин
+};
 
-class Router {
+// две новые структуры, для возврщения результатов в FindRoute
+struct RouteItem {
+    std::string type; // "Wait" или "Bus"
+    std::string stop_name; // для "Wait"
+    std::string bus; // для "Bus"
+    int span_count; // для "Bus"
+    double time;
+};
+
+struct Route {
+    double total_time = 0.0;
+    std::vector<RouteItem> items;
+};
+
+class TransportRouter {
 public:
-
-    Router(const JsonReader& input_doc, const transport_catalogue::TransportCatalogue& catalogue) : input_doc_(input_doc) {
-		json::Dict temp_dict = GetRoutingSettings();
-		bus_wait_time_ = temp_dict.at("bus_wait_time"s).AsInt();
-		bus_velocity_ = temp_dict.at("bus_velocity"s).AsDouble();
+	// router_settings передаю по значению, так как объект небольшой - 16 байт
+	TransportRouter(const transport_catalogue::TransportCatalogue& catalogue, const TransportRouterSettings router_settings)
+	: bus_wait_time_(router_settings.bus_wait_time_)
+	, bus_speed_(router_settings.bus_speed_) {
 		BuildGraph(catalogue);
 	}
 
-	const graph::DirectedWeightedGraph<double>& BuildGraph(const transport_catalogue::TransportCatalogue& catalogue);
-	const std::optional<graph::Router<double>::RouteInfo> FindRoute(const std::string_view stop_from, const std::string_view stop_to) const;
-	const graph::DirectedWeightedGraph<double>& GetGraph() const;
+	std::optional<Route> FindRoute(const std::string_view stop_from, const std::string_view stop_to) const; // новый метод, старый закоментировал
+
+	//const std::optional<graph::Router<double>::RouteInfo> FindRoute(const std::string_view stop_from, const std::string_view stop_to) const;
+	// убрал
+	//const graph::DirectedWeightedGraph<double>& GetGraph() const;
 
 private:
-	int bus_wait_time_ = 0;
-	double bus_velocity_ = 0.0;
-
-    const JsonReader& input_doc_;
+	int bus_wait_time_ = 0; // ожидание в минутах
+	double bus_speed_ = 0.0; // скорость в м/мин
 	graph::DirectedWeightedGraph<double> graph_;
 	std::map<std::string, graph::VertexId> stop_ids_;
 	std::unique_ptr<graph::Router<double>> router_;
-    const json::Dict& GetRoutingSettings() const;
+
+	const graph::DirectedWeightedGraph<double>& BuildGraph(const transport_catalogue::TransportCatalogue& catalogue); // перенёс в private
 };
 
 }

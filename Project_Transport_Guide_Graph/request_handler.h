@@ -29,27 +29,27 @@
 class RequestHandler {
 public:
 
-    RequestHandler(const transport_catalogue::TransportCatalogue& catalogue, const JsonReader& input_doc, const MapRenderer& renderer, const transport_router::Router& router)
+    RequestHandler(const transport_catalogue::TransportCatalogue& catalogue, const JsonReader& input_doc, const MapRenderer& renderer, const transport_router::TransportRouter& router)
         : catalogue_(catalogue), input_doc_(input_doc), renderer_(renderer), router_(router) {
     }
 
     void PrintStatRequest();
-
-    
 
 private:
     // RequestHandler использует агрегацию объектов "Транспортный Справочник" и "Визуализатор Карты"
     const transport_catalogue::TransportCatalogue& catalogue_;
     const JsonReader& input_doc_;
     const MapRenderer& renderer_;
-    const transport_router::Router& router_;
+    const transport_router::TransportRouter& router_;
 
     // Возвращает маршруты, проходящие через
     const std::set<std::string>& GetBusesAtStop(const std::string_view& stop_name) const;
-
-    const std::optional<graph::Router<double>::RouteInfo> GetOptimalRoute(const std::string_view stop_from, const std::string_view stop_to) const;
-
-    const graph::DirectedWeightedGraph<double>& GetRouterGraph() const;
+    // убрал
+    //const std::optional<graph::Router<double>::RouteInfo> GetOptimalRoute(const std::string_view stop_from, const std::string_view stop_to) const;
+    // убрал
+    //const graph::DirectedWeightedGraph<double>& GetRouterGraph() const;
+    // новый метод, работающий с FindRoute
+    std::optional<transport_router::Route> GetRouteInfo(const std::string_view stop_from, const std::string_view stop_to) const;
     
     void ProcessStatRequest(const json::Node& request, std::ostream& output_stream);
 };

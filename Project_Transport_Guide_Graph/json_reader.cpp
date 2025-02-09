@@ -72,3 +72,11 @@ void JsonReader::ProcessBaseRequest(const json::Node& request, const std::string
 const json::Document& JsonReader::GetInputDoc() const {
     return input_doc_;
 }
+
+const transport_router::TransportRouterSettings JsonReader::GetRoutingSettings() const {
+    transport_router::TransportRouterSettings router_settings_struct;
+    const json::Dict& router_settings_as_dict = input_doc_.GetRoot().AsDict().at("routing_settings"s).AsDict();
+    router_settings_struct.bus_wait_time_ = router_settings_as_dict.at("bus_wait_time"s).AsInt();
+	router_settings_struct.bus_speed_ = router_settings_as_dict.at("bus_velocity"s).AsDouble() * KM_PER_HOUR_TO_METER_PER_MINUTE_TRANSFER; // перевод скорости из км/ч в м/мин для правильного подсчёта "веса" грани
+    return router_settings_struct;
+}
