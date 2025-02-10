@@ -1,73 +1,57 @@
-#include <algorithm>
 #include <iostream>
-#include <random>
+#include <memory>
+#include <new>
 #include <string>
-#include <vector>
-#include <unordered_map>
-
-#include "log_duration.h"
 
 using namespace std;
 
-class RandomContainer {
+class Cat {
 public:
-    void Insert(int val) {
-        values_pool_.push_back(val);
-        index_map_[val] = values_pool_.size() - 1;
+    Cat(string name, int age)
+        : name_(move(name))
+        , age_(age)  //
+    {
+        cout << "Hello from " << name_ << endl;
     }
-    void Remove(int val) {
-        //values_pool_.erase(find(values_pool_.begin(), values_pool_.end(), val));
-        int index_to_remove = index_map_[val];
-        int last_element = values_pool_.back();
-        values_pool_[index_to_remove] = last_element;
-        index_map_[last_element] = index_to_remove;
-        values_pool_.pop_back();
-        index_map_.erase(val);
+
+    ~Cat() {
+        cout << "Goodbye from "sv << name_ << endl;
     }
-    bool Has(int val) const {
-        //return find(values_pool_.begin(), values_pool_.end(), val) != values_pool_.end();
-        return index_map_.count(val) > 0;
-    }
-    int GetRand() const {
-        uniform_int_distribution<int> distr(0, values_pool_.size() - 1);
-        int rand_index = distr(engine_);
-        return values_pool_[rand_index];
+
+    void SayHello() const {
+        cout << "Meow, my name is "sv << name_ << ". I'm "sv << age_ << " year old."sv << endl;
     }
 
 private:
-    vector<int> values_pool_;
-    unordered_map<int, int> index_map_;
-    mutable mt19937 engine_;
+    string name_;
+    int age_;
 };
 
 int main() {
-    RandomContainer container;
-    int query_num = 0;
-    cin >> query_num;
-    {
-        LOG_DURATION("Requests handling"s);
-        for (int query_id = 0; query_id < query_num; query_id++) {
-            string query_type;
-            cin >> query_type;
-            if (query_type == "INSERT"s) {
-                int value = 0;
-                cin >> value;
-                container.Insert(value);
-            } else if (query_type == "REMOVE"s) {
-                int value = 0;
-                cin >> value;
-                container.Remove(value);
-            } else if (query_type == "HAS"s) {
-                int value = 0;
-                cin >> value;
-                if (container.Has(value)) {
-                    cout << "true"s << endl;
-                } else {
-                    cout << "false"s << endl;
-                }
-            } else if (query_type == "RAND"s) {
-                cout << container.GetRand() << endl;
-            }
-        }
-    }
+    Cat cat1("Tom"s, 2);
+    cat1.SayHello();
+
+    Cat* cat2 = new Cat("Leo"s, 3);
+    cat2->SayHello();
+    delete cat2;
+
+    auto cat3 = make_unique<Cat>("Felix"s, 4);
+    cat3->SayHello();
+
+    // этот способ не работает, нужен явный вызов дуструктора
+    //alignas(Cat) char buf[sizeof(Cat)];
+    //unique_ptr<Cat> cat5(new (&buf[0]) Cat("Luna"s, 1));
+    //cat5->SayHello();
+
+    alignas(Cat) char buf[sizeof(Cat)];
+    Cat* cat4 = new (&buf[0]) Cat("Luna"s, 1);
+    cat4->SayHello();
+    cat4->~Cat();
+
+    void* buf2 = operator new (sizeof(Cat));
+    Cat* cat6 = new (buf2) Cat("Murka"s, 4);
+    cat6->SayHello();
+    cat6->~Cat();
+    operator delete (buf2);
 }
+

@@ -21,7 +21,7 @@ public:
         is_initialized_ = true;
     }
 
-    Optional(T&& value) {
+    Optional(T&& value){
         new (data_) T(std::move(value));
         is_initialized_ = true;
     }
@@ -135,7 +135,7 @@ public:
     }
 
 private:
-    // alignas должен для правильного выравнивания блока памяти
+    // alignas нужен для правильного выравнивания блока памяти
     alignas(T) char data_[sizeof(T)];
     bool is_initialized_ = false;
 };

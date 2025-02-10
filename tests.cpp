@@ -2,6 +2,227 @@
 
 
 
+/////////////////////////////////////////////////////
+#include <iostream>
+#include <memory>
+#include <new>
+#include <string>
+
+using namespace std;
+
+class Cat {
+public:
+    Cat(string name, int age)
+        : name_(move(name))
+        , age_(age)  //
+    {
+        cout << "Hello from " << name_ << endl;
+    }
+
+    ~Cat() {
+        cout << "Goodbye from "sv << name_ << endl;
+    }
+
+    void SayHello() const {
+        cout << "Meow, my name is "sv << name_ << ". I'm "sv << age_ << " year old."sv << endl;
+    }
+
+private:
+    string name_;
+    int age_;
+};
+
+int main() {
+    Cat cat1("Tom"s, 2);
+    cat1.SayHello();
+
+    Cat* cat2 = new Cat("Leo"s, 3);
+    cat2->SayHello();
+    delete cat2;
+
+    auto cat3 = make_unique<Cat>("Felix"s, 4);
+    cat3->SayHello();
+
+    // этот способ не работает, нужен явный вызов дуструктора
+    //alignas(Cat) char buf[sizeof(Cat)];
+    //unique_ptr<Cat> cat5(new (&buf[0]) Cat("Luna"s, 1));
+    //cat5->SayHello();
+
+    alignas(Cat) char buf[sizeof(Cat)];
+    Cat* cat4 = new (&buf[0]) Cat("Luna"s, 1);
+    cat4->SayHello();
+    cat4->~Cat();
+
+    void* buf2 = operator new (sizeof(Cat));
+    Cat* cat6 = new (buf2) Cat("Murka"s, 4);
+    cat6->SayHello();
+    cat6->~Cat();
+    operator delete (buf2);
+}
+
+///////////////////////////////////////////////
+#include <array>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+
+using namespace std;
+
+using namespace std::literals;
+
+struct Nucleotide {
+    char symbol;
+    size_t position;
+    int chromosome_num;
+    int gene_num;
+    bool is_marked;
+    char service_info;
+};
+
+const static int N = 4;
+const std::array<char, N> Letters = {
+    'A', 'T', 'G', 'C'};
+
+struct CompactNucleotide {
+    uint32_t position;
+    uint16_t gene_num : 15;
+    uint16_t is_marked : 1;
+    uint16_t service_info : 8;
+    uint16_t chromosome_num : 6;
+    uint16_t symbol : 2;
+};
+
+CompactNucleotide Compress(const Nucleotide& n) {
+    CompactNucleotide compact_nucleotide;
+    compact_nucleotide.position = static_cast<uint32_t>(n.position);
+    compact_nucleotide.gene_num = static_cast<uint16_t>(n.gene_num);
+    compact_nucleotide.is_marked = static_cast<uint16_t>(n.is_marked);
+    compact_nucleotide.service_info = static_cast<uint16_t>(n.service_info);
+    compact_nucleotide.chromosome_num = static_cast<uint16_t>(n.chromosome_num);
+    
+    for (size_t i = 0; i < N; ++i) {
+        if (n.symbol == Letters[i]) {
+            compact_nucleotide.symbol = i;
+            break;
+        }
+    }
+
+    return compact_nucleotide;
+}
+
+Nucleotide Decompress(const CompactNucleotide& cn) {
+    Nucleotide nucleotide;
+    nucleotide.symbol = Letters[cn.symbol];
+    nucleotide.position = cn.position;
+    nucleotide.chromosome_num = cn.chromosome_num;
+    nucleotide.gene_num = cn.gene_num;
+    nucleotide.is_marked = cn.is_marked;
+    nucleotide.service_info = cn.service_info;
+
+    return nucleotide;
+}
+
+static_assert(sizeof(CompactNucleotide) <= 8, "Your CompactNucleotide is not compact enough");
+static_assert(alignof(CompactNucleotide) == 4, "Don't use '#pragma pack'!");
+bool operator==(const Nucleotide& lhs, const Nucleotide& rhs) {
+    return (lhs.symbol == rhs.symbol) && (lhs.position == rhs.position) && (lhs.chromosome_num == rhs.chromosome_num)
+        && (lhs.gene_num == rhs.gene_num) && (lhs.is_marked == rhs.is_marked) && (lhs.service_info == rhs.service_info);
+}
+void TestSize() {
+    assert(sizeof(CompactNucleotide) <= 8);
+}
+void TestCompressDecompress() {
+    Nucleotide source;
+    source.symbol = 'T';
+    source.position = 1'000'000'000;
+    source.chromosome_num = 48;
+    source.gene_num = 1'000;
+    source.is_marked = true;
+    source.service_info = '!';
+
+    CompactNucleotide compressedSource = Compress(source);
+    Nucleotide decompressedSource = Decompress(compressedSource);
+
+    assert(source == decompressedSource);
+}
+
+int main() {
+    TestSize();
+    TestCompressDecompress();
+}
+
+//////////////////////////////////////////////////
+#include <array>
+#include <cstdint>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace std::literals;
+using namespace std;
+
+// 16 байт
+//struct Plate {
+//    char c1;
+//   int num;
+//    char c2;
+//    char c3;
+//    int region;
+//};
+
+// перегруппировка 12 байт
+//struct Plate {
+//    int num;
+//    int region;
+//    char c1;
+//    char c2;
+//    char c3;
+//};
+
+// перевод int в uint16_t - 8 байт
+//struct Plate {
+//    uint16_t num;
+//    uint16_t region;
+//    char c1;
+//    char c2;
+//    char c3;
+//}
+
+// использование директивы pragma pack - 7 байт
+//const static int N = 12;
+//const std::array<char, N> Letters = {
+//    'A', 'B', 'E', 'K', 'M', 'H', 'O', 'P', 'C', 'T', 'Y', 'X'};
+
+//#pragma pack(push, 1)
+//struct Plate {
+//    uint16_t num:10;      // Определим поля num и region как битовые: 10 бит
+//    uint16_t region:10;
+//    uint8_t c1:4;         // а с1 с2 и с3 тоже, по 4 бита (номер буквы в массиве N)
+//    uint8_t c2:4;
+//    uint8_t c3:4;
+//};
+//#pragma pack(pop)
+
+// уместить всё в один uint32_t - бесценно (4 байта)
+const static int N = 12;
+const std::array<char, N> Letters = {
+    'A', 'B', 'E', 'K', 'M', 'H', 'O', 'P', 'C', 'T', 'Y', 'X'};
+
+#pragma pack(push, 1)
+struct Plate {
+    uint32_t num:10;
+    uint32_t region:10;
+    uint32_t c1:4;
+    uint32_t c2:4;
+    uint32_t c3:4;
+};
+#pragma pack(pop)
+
+int main() {
+    cout << sizeof(Plate) << endl;
+}
+
 /////////////////////////////////////////////////
 #include <algorithm>
 #include <iostream>
