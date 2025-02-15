@@ -1,6 +1,473 @@
 /*
 
+#include <cassert>
+#include <memory>
+#include <string>
 
+// Шаблон ApplyToMany применяет функцию f (первый аргумент) последовательно к каждому из остальных своих аргументов
+
+    template <typename Foo, typename... Args>
+    void ApplyToMany(Foo& foo, Args&&... args) {
+        (..., foo(std::forward<Args>(args)));
+    }
+
+
+void TestSum() {
+    int x;
+    auto lambda = [&x](int y) {
+        x += y;
+    };
+
+    x = 0;
+    ApplyToMany(lambda, 1);
+    assert(x == 1);
+
+    x = 0;
+    ApplyToMany(lambda, 1, 2, 3, 4, 5);
+    assert(x == 15);
+}
+
+void TestConcatenate() {
+    using namespace std::literals;
+    std::string s;
+    auto lambda = [&s](const auto& t) {
+        if (!s.empty()) {
+            s += " ";
+        }
+        s += t;
+    };
+
+    ApplyToMany(lambda, "cyan"s, "magenta"s, "yellow"s, "black"s);
+    assert(s == "cyan magenta yellow black"s);
+}
+
+void TestIncrement() {
+    auto increment = [](int& x) {
+        ++x;
+    };
+
+    int a = 0;
+    int b = 3;
+    int c = 43;
+
+    ApplyToMany(increment, a, b, c);
+    assert(a == 1);
+    assert(b == 4);
+    assert(c == 44);
+}
+
+void TestArgumentForwarding() {
+    struct S {
+        int call_count = 0;
+        int i = 0;
+        std::unique_ptr<int> p;
+        void operator()(int i) {
+            this->i = i;
+            ++call_count;
+        }
+        void operator()(std::unique_ptr<int>&& p) {
+            this->p = std::move(p);
+            ++call_count;
+        }
+    };
+
+    S s;
+
+    ApplyToMany(s, 1, std::make_unique<int>(42));
+    assert(s.call_count == 2);
+    assert(s.i == 1);
+    assert(s.p != nullptr && *s.p == 42);
+}
+
+void TestArgumentForwardingToConstFunction() {
+    struct S {
+        mutable int call_count = 0;
+        mutable int i = 0;
+        mutable std::unique_ptr<int> p;
+        void operator()(int i) const {
+            this->i = i;
+            ++call_count;
+        }
+        void operator()(std::unique_ptr<int>&& p) const {
+            this->p = std::move(p);
+            ++call_count;
+        }
+    };
+
+    const S s;
+    ApplyToMany(s, 1, std::make_unique<int>(42));
+    assert(s.call_count == 2);
+    assert(s.i == 1);
+    assert(s.p != nullptr && *s.p == 42);
+}
+
+int main() {
+    TestSum();
+    TestConcatenate();
+    TestIncrement();
+    TestArgumentForwarding();
+    TestArgumentForwardingToConstFunction();
+    return 0;
+}
+
+//////////////////////////////////////
+#include <cassert>
+#include <memory>
+#include <string>
+
+// Шаблон ApplyToMany применяет функцию f (первый аргумент) последовательно к каждому из остальных своих аргументов
+
+    template <typename Foo, typename... Args>
+    void ApplyToMany(Foo& foo, Args&&... args) {
+        (..., foo(std::forward<Args>(args)));
+    }
+
+
+void TestSum() {
+    int x;
+    auto lambda = [&x](int y) {
+        x += y;
+    };
+
+    x = 0;
+    ApplyToMany(lambda, 1);
+    assert(x == 1);
+
+    x = 0;
+    ApplyToMany(lambda, 1, 2, 3, 4, 5);
+    assert(x == 15);
+}
+
+void TestConcatenate() {
+    using namespace std::literals;
+    std::string s;
+    auto lambda = [&s](const auto& t) {
+        if (!s.empty()) {
+            s += " ";
+        }
+        s += t;
+    };
+
+    ApplyToMany(lambda, "cyan"s, "magenta"s, "yellow"s, "black"s);
+    assert(s == "cyan magenta yellow black"s);
+}
+
+void TestIncrement() {
+    auto increment = [](int& x) {
+        ++x;
+    };
+
+    int a = 0;
+    int b = 3;
+    int c = 43;
+
+    ApplyToMany(increment, a, b, c);
+    assert(a == 1);
+    assert(b == 4);
+    assert(c == 44);
+}
+
+void TestArgumentForwarding() {
+    struct S {
+        int call_count = 0;
+        int i = 0;
+        std::unique_ptr<int> p;
+        void operator()(int i) {
+            this->i = i;
+            ++call_count;
+        }
+        void operator()(std::unique_ptr<int>&& p) {
+            this->p = std::move(p);
+            ++call_count;
+        }
+    };
+
+    S s;
+
+    ApplyToMany(s, 1, std::make_unique<int>(42));
+    assert(s.call_count == 2);
+    assert(s.i == 1);
+    assert(s.p != nullptr && *s.p == 42);
+}
+
+void TestArgumentForwardingToConstFunction() {
+    struct S {
+        mutable int call_count = 0;
+        mutable int i = 0;
+        mutable std::unique_ptr<int> p;
+        void operator()(int i) const {
+            this->i = i;
+            ++call_count;
+        }
+        void operator()(std::unique_ptr<int>&& p) const {
+            this->p = std::move(p);
+            ++call_count;
+        }
+    };
+
+    const S s;
+    ApplyToMany(s, 1, std::make_unique<int>(42));
+    assert(s.call_count == 2);
+    assert(s.i == 1);
+    assert(s.p != nullptr && *s.p == 42);
+}
+
+int main() {
+    TestSum();
+    TestConcatenate();
+    TestIncrement();
+    TestArgumentForwarding();
+    TestArgumentForwardingToConstFunction();
+    return 0;
+}
+
+////////////////////////////////////////////////
+#include <cassert>
+#include <iostream>
+#include <string>
+#include <string_view>
+
+using namespace std;
+
+// Напишите вашу реализацию EqualsToOneOf здесь
+template <typename T0, typename... Ts>
+bool EqualsToOneOf(const T0& v0, const Ts&... vs) {
+    if constexpr (sizeof...(vs) != 0) {
+        return ((v0 == vs) || ...);
+    } else {
+        return false;
+    }
+}
+
+template <typename... Types>
+void PrintArgumentCount(const Types&... values) {
+    cout << sizeof...(values) << endl;
+}
+
+template<typename... Ts>
+auto sum(Ts... args) {
+    return (args + ...);
+}
+
+template<typename... Ts>
+std::string concat(const std::string& first, const Ts&... rest) {
+    return (first + ... + rest);
+}
+
+template<typename... Ts>
+bool allTrue(bool b, Ts... bs) {
+    return (b && ... && bs);
+}
+
+namespace detail {
+    // Функция для вывода одного и более значений
+    template <typename T0, typename... Ts>
+    void LogImpl(std::ostream& out, const T0& v0, const Ts&... vs) {
+        using namespace std::literals;
+        out << v0;
+        (..., (out << ", "sv << vs));
+    }
+    }  // namespace detail
+    
+    // Функция Log остаётся без изменений
+    template <typename... Ts>
+    void Log(std::ostream& out, const Ts&... vs) {
+        if constexpr (sizeof...(vs) != 0) {
+            detail::LogImpl(out, vs...);
+        }
+        out << std::endl;
+    }
+
+int main() {
+    using namespace std::literals;
+
+    PrintArgumentCount();                    // Выведет 0
+    PrintArgumentCount(42);                  // Выведет 1
+    PrintArgumentCount("hello"s, 42, 1.23);  // Выведет 3
+
+    int result = sum(1, 2, 3, 4); // результат будет равен 10
+    cout << result << endl;
+
+    std::string str = concat("Hello ", "world!", " How are you?");
+    std::cout << str << std::endl; // Выведет: Hello world! How are you?
+
+    bool result2 = allTrue(true, true, false, true); // Результат будет false
+    cout << std::boolalpha << result2 << endl;
+
+    assert(EqualsToOneOf("hello"sv, "hi"s, "hello"s));
+    assert(!EqualsToOneOf(1, 10, 2, 3, 6));
+    assert(!EqualsToOneOf(8));
+}
+
+//////////////////////////////////////////////
+#pragma once
+#include <cassert>
+#include <cstdlib>
+#include <memory>
+#include <new>
+#include <utility>
+
+template <typename T>
+class RawMemory {
+public:
+    RawMemory() = default;
+
+    explicit RawMemory(size_t capacity)
+        : buffer_(Allocate(capacity))
+        , capacity_(capacity) {
+    }
+
+    ~RawMemory() {
+        Deallocate(buffer_);
+    }
+
+    T* operator+(size_t offset) noexcept {
+        // Разрешается получать адрес ячейки памяти, следующей за последним элементом массива
+        assert(offset <= capacity_);
+        return buffer_ + offset;
+    }
+
+    const T* operator+(size_t offset) const noexcept {
+        return const_cast<RawMemory&>(*this) + offset;
+    }
+
+    const T& operator[](size_t index) const noexcept {
+        return const_cast<RawMemory&>(*this)[index];
+    }
+
+    T& operator[](size_t index) noexcept {
+        assert(index < capacity_);
+        return buffer_[index];
+    }
+
+    void Swap(RawMemory& other) noexcept {
+        std::swap(buffer_, other.buffer_);
+        std::swap(capacity_, other.capacity_);
+    }
+
+    const T* GetAddress() const noexcept {
+        return buffer_;
+    }
+
+    T* GetAddress() noexcept {
+        return buffer_;
+    }
+
+    size_t Capacity() const {
+        return capacity_;
+    }
+
+private:
+    // Выделяет сырую память под n элементов и возвращает указатель на неё
+    static T* Allocate(size_t n) {
+        return n != 0 ? static_cast<T*>(operator new(n * sizeof(T))) : nullptr;
+    }
+
+    // Освобождает сырую память, выделенную ранее по адресу buf при помощи Allocate
+    static void Deallocate(T* buf) noexcept {
+        operator delete(buf);
+    }
+
+    T* buffer_ = nullptr;
+    size_t capacity_ = 0;
+};
+
+template <typename T>
+class Vector {
+public:
+
+    Vector() = default;
+
+    explicit Vector(size_t size)
+    : data_(size)
+    , size_(size)  //
+    {
+        std::uninitialized_value_construct_n(data_.GetAddress(), size);
+    }
+
+    Vector(const Vector& other)
+        : data_(other.size_)
+        , size_(other.size_)  
+    {
+        std::uninitialized_copy_n(other.data_.GetAddress(), size_, data_.GetAddress());
+    }
+    
+    void Reserve(size_t new_capacity) {
+        if (new_capacity <= data_.Capacity()) {
+            return;
+        }
+        RawMemory<T> new_data(new_capacity);
+        // Конструируем элементы в new_data, копируя или перемещая их из data_
+        //std::uninitialized_copy_n(data_.GetAddress(), size_, new_data.GetAddress());
+        //std::uninitialized_move_n(data_.GetAddress(), size_, new_data.GetAddress());
+        // constexpr оператор if будет вычислен во время компиляции
+        if constexpr (std::is_nothrow_move_constructible_v<T> || !std::is_copy_constructible_v<T>) {
+            std::uninitialized_move_n(data_.GetAddress(), size_, new_data.GetAddress());
+        } else {
+            std::uninitialized_copy_n(data_.GetAddress(), size_, new_data.GetAddress());
+        }
+        // Разрушаем элементы в data_
+        std::destroy_n(data_.GetAddress(), size_);
+        // Избавляемся от старой сырой памяти, обменивая её на новую
+        data_.Swap(new_data);
+        // При выходе из метода старая память будет возвращена в кучу
+    }
+
+    ~Vector() {
+        std::destroy_n(data_.GetAddress(), size_);
+    }
+
+    size_t Size() const noexcept {
+        return size_;
+    }
+
+    size_t Capacity() const noexcept {
+        return data_.Capacity();
+    }
+    //В константном операторе [] используется оператор  const_cast,
+    //чтобы снять константность с ссылки на текущий объект и вызвать неконстантную версию оператора [].
+    //Так получится избавиться от дублирования проверки assert(index < size).
+    const T& operator[](size_t index) const noexcept {
+        return const_cast<Vector&>(*this)[index];
+    }
+
+    T& operator[](size_t index) noexcept {
+        assert(index < size_);
+        return data_[index];
+    }
+private:
+    //T* data_ = nullptr;
+    //size_t capacity_ = 0;
+    RawMemory<T> data_;
+    size_t size_ = 0;
+
+    // Выделяет сырую память под n элементов и возвращает указатель на неё
+    //static T* Allocate(size_t n) {
+    //    return n != 0 ? static_cast<T*>(operator new(n * sizeof(T))) : nullptr;
+    //}
+
+    // Освобождает сырую память, выделенную ранее по адресу buf при помощи Allocate
+    //static void Deallocate(T* buf) noexcept {
+    //    operator delete(buf);
+    //}
+
+    // Вызывает деструкторы n объектов массива по адресу buf
+    // static void DestroyN(T* buf, size_t n) noexcept {
+    //    for (size_t i = 0; i != n; ++i) {
+    //        Destroy(buf + i);
+    //    }
+    //}
+
+    // Создаёт копию объекта elem в сырой памяти по адресу buf
+    // static void CopyConstruct(T* buf, const T& elem) {
+    //    new (buf) T(elem);
+    //}
+
+    // Вызывает деструктор объекта по адресу buf
+    //static void Destroy(T* buf) noexcept {
+    //    buf->~T();
+    //}
+};
 
 /////////////////////////////////////////////////////
 #include <iostream>

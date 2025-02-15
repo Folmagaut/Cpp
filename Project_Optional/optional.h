@@ -96,11 +96,11 @@ public:
 
     // Операторы * и -> не должны делать никаких проверок на пустоту Optional.
     // Эти проверки остаются на совести программиста
-    T& operator*() {
+    T& operator*() & {
         return *reinterpret_cast<T*>(&data_[0]);
     }
 
-    const T& operator*() const {
+    const T& operator*() const& {
         return *reinterpret_cast<const T*>(&data_[0]);
     }
 
@@ -113,18 +113,29 @@ public:
     }
 
     // Метод Value() генерирует исключение BadOptionalAccess, если Optional пуст
-    T& Value() {
+    T& Value() & {
         if (!is_initialized_) {
             throw BadOptionalAccess();
         }
         return **this;
     }
 
-    const T& Value() const {
+    const T& Value() const& {
         if (!is_initialized_) {
             throw BadOptionalAccess();
         }
         return **this;
+    }
+
+    T&& operator*() && {
+        return std::move(*reinterpret_cast<T*>(&data_[0]));
+    }
+
+    T&& Value() && {
+        if (!is_initialized_) {
+            throw BadOptionalAccess();
+        }
+        return std::move(**this);
     }
 
     void Reset() {
@@ -132,6 +143,15 @@ public:
             Value().~T();
             is_initialized_ = false;
         }
+    }
+
+    template <typename... Args>
+    void Emplace(Args&&... args) {
+        if (is_initialized_) {
+            Reset();
+        }
+        new (data_) T(std::forward<Args>(args)...);
+        is_initialized_ = true;
     }
 
 private:
