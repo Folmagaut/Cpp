@@ -1,0 +1,5 @@
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Image/cmake_build/CMakeFiles/hmirror.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Image/cmake_build/CMakeFiles/vmirror.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Image/cmake_build/CMakeFiles/sobel.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Image/cmake_build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Image/cmake_build/CMakeFiles/ZERO_CHECK.dir

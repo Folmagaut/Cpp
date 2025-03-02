@@ -1,0 +1,10 @@
+^C:\USERS\FOLM-M\DESKTOP\PROJECTS\CPP\PROJECT_IMGLIB\BUILD\CMAKEFILES\2C0B3E8B1445BC44D0F6140B23359E8C\GENERATE.STAMP.RULE
+setlocal
+"D:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Folm-M/Desktop/Projects/Cpp/Project_ImgLib/ImgLib -BC:/Users/Folm-M/Desktop/Projects/Cpp/Project_ImgLib/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/Folm-M/Desktop/Projects/Cpp/Project_ImgLib/build/ImgLib.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

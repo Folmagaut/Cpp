@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_ImgLib\ImgLib\img_lib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_ImgLib\ImgLib\ppm_image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_ImgLib\ImgLib\img_lib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_ImgLib\ImgLib\ppm_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_ImgLib\ImgLib\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{CA549FE8-FA91-303C-8940-E809C5D22ED2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{B46C2D0D-C427-36D0-BABF-5E67B992B730}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

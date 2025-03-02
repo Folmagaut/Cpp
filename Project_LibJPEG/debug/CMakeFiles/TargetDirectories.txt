@@ -1,0 +1,6 @@
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_LibJPEG/debug/CMakeFiles/imgconv.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_LibJPEG/debug/CMakeFiles/edit_cache.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_LibJPEG/debug/CMakeFiles/rebuild_cache.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_LibJPEG/debug/ImgLibBuildDir/CMakeFiles/ImgLib.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_LibJPEG/debug/ImgLibBuildDir/CMakeFiles/edit_cache.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_LibJPEG/debug/ImgLibBuildDir/CMakeFiles/rebuild_cache.dir

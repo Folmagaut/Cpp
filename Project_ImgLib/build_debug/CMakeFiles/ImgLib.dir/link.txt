@@ -1,0 +1,2 @@
+C:\dev\msys64\mingw64\bin\ar.exe qc libImgLib.a CMakeFiles/ImgLib.dir/img_lib.cpp.obj CMakeFiles/ImgLib.dir/ppm_image.cpp.obj
+C:\dev\msys64\mingw64\bin\ranlib.exe libImgLib.a

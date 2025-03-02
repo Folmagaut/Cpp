@@ -1,0 +1,4 @@
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_ImgDynLib/build/CMakeFiles/ImgLib.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_ImgDynLib/build/CMakeFiles/ImgLibDll.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_ImgDynLib/build/CMakeFiles/edit_cache.dir
+C:/Users/Folm-M/Desktop/Projects/Cpp/Project_ImgDynLib/build/CMakeFiles/rebuild_cache.dir

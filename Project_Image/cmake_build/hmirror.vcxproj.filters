@@ -1,0 +1,33 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Image\cmake\hmirr.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Image\cmake\img_lib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Image\cmake\ppm_image.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Image\cmake\img_lib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Image\cmake\ppm_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Image\cmake\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{F8914210-D072-325F-AD93-DAAE192BA915}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{0C631003-C64F-3A0B-AE0A-7E370BF9876D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
