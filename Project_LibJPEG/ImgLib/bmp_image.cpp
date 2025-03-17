@@ -38,8 +38,14 @@ PACKED_STRUCT_END
 // функция вычисления отступа по ширине:
 // деление, а затем умножение на 4 округляет до числа, кратного четырём
 // прибавление тройки гарантирует, что округление будет вверх
-static int GetBMPStride(int w) {
-    return 4 * ((w * 3 + 3) / 4);
+static int GetBMPStride(int width) {
+    constexpr int BYTES_PER_PIXEL = 3; // 24 бита на пиксель = 3 байта
+    constexpr int ALIGNMENT_BYTES = 4; // выравнивание по 4 байта
+
+    int row_width_bytes = width * BYTES_PER_PIXEL;
+    int aligned_row_width_bytes = ALIGNMENT_BYTES * ((row_width_bytes + (ALIGNMENT_BYTES - 1)) / ALIGNMENT_BYTES);
+
+    return aligned_row_width_bytes;
 }
 
 // напишите эту функцию
@@ -81,8 +87,14 @@ Image LoadBMP(const Path& file) {
     BitmapInfoHeader info_header;
 
     ifs.read(reinterpret_cast<char*>(&file_header), sizeof(BitmapFileHeader));
+    if (!ifs.good()) {
+        return {};
+    }
     ifs.read(reinterpret_cast<char*>(&info_header), sizeof(BitmapInfoHeader));
-
+    if (!ifs.good()) {
+        return {};
+    }
+    
     if (file_header.char_b != 'B'
         || file_header.char_m != 'M'
         || file_header.padding != 54
@@ -105,6 +117,9 @@ Image LoadBMP(const Path& file) {
     for (int y = 0; y < h; ++y) {
         Color* line = result.GetLine(h - 1 - y);
         ifs.read(buff.data(), padding);
+        if (!ifs.good()) {
+            return {};
+        }
 
         for (int x = 0; x < w; ++x) {
             line[x].b = static_cast<byte>(buff[x * 3 + 0]);

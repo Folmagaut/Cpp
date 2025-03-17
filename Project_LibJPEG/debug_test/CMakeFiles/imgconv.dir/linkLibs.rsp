@@ -1,0 +1,1 @@
+  -L"C:/Users/Folm-M/Desktop/Projects/Cpp/Project_LibJPEG/libjpeg/lib/Debug"  ImgLibBuildDir/libImgLib.a -ljpeg -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

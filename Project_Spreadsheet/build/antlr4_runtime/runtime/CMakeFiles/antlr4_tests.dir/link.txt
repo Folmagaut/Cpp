@@ -1,0 +1,3 @@
+C:\dev\CMake\bin\cmake.exe -E rm -f CMakeFiles\antlr4_tests.dir/objects.a
+C:\dev\msys64\mingw64\bin\ar.exe qc CMakeFiles\antlr4_tests.dir/objects.a @CMakeFiles\antlr4_tests.dir\objects1.rsp
+C:\dev\msys64\mingw64\bin\c++.exe  -Wall -Wextra -pedantic -Wno-unused-parameter -Wno-implicit-fallthrough   -Wall -pedantic -W -g -O0 -g   -Wall -pedantic -W -Wl,--whole-archive CMakeFiles\antlr4_tests.dir/objects.a -Wl,--no-whole-archive -o antlr4_tests.exe -Wl,--out-implib,libantlr4_tests.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\antlr4_tests.dir\linkLibs.rsp
