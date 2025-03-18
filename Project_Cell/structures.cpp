@@ -55,36 +55,7 @@ std::string Position::ToString() const {
 
 // символы латинского алфавита от A до Z имеют следующие номера индексов: 'A'...'Z' - 65...90
 Position Position::FromString(std::string_view str) {
-    /* if (str.size() > 8) {
-        return Position::NONE;
-    }
 
-    std::string s_row;
-    std::string s_col;
-
-    size_t cnt = 0;
-    for (const char c : str) {
-        if (isalpha(c) && isupper(c)) {
-            s_col.push_back(c);
-        } else if (isdigit(c)) {
-            s_row = str.substr(cnt);
-            break;
-        } else {
-            return Position::NONE;
-        }
-        ++cnt;
-    }
-
-    if (s_col.empty() || s_row.empty() || s_col.size() > MAX_POS_LETTER_COUNT) {
-        return Position::NONE;
-    }
-
-    int col = 0;
-    size_t s_col_size = s_col.size();
-    for (size_t i = 0; i < s_col_size; ++i) {
-        col += (static_cast<int>(s_col.back()) - CHAR_A + 1) * pow(LETTERS, i);
-        s_col.pop_back();
-    } */
     size_t col_end = 0;
     while (col_end < str.size() && isalpha(str[col_end]) /* && isupper(str[col_end]) */) {
         col_end++;
