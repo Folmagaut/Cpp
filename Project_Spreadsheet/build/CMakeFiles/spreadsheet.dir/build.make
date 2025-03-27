@@ -177,11 +177,41 @@ CMakeFiles/spreadsheet.dir/FormulaAST.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/spreadsheet.dir/FormulaAST.cpp.s"
 	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\FormulaAST.cpp -o CMakeFiles\spreadsheet.dir\FormulaAST.cpp.s
 
+CMakeFiles/spreadsheet.dir/cell.cpp.obj: CMakeFiles/spreadsheet.dir/flags.make
+CMakeFiles/spreadsheet.dir/cell.cpp.obj: CMakeFiles/spreadsheet.dir/includes_CXX.rsp
+CMakeFiles/spreadsheet.dir/cell.cpp.obj: C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Spreadsheet/cell.cpp
+CMakeFiles/spreadsheet.dir/cell.cpp.obj: CMakeFiles/spreadsheet.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/spreadsheet.dir/cell.cpp.obj"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/spreadsheet.dir/cell.cpp.obj -MF CMakeFiles\spreadsheet.dir\cell.cpp.obj.d -o CMakeFiles\spreadsheet.dir\cell.cpp.obj -c C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\cell.cpp
+
+CMakeFiles/spreadsheet.dir/cell.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/spreadsheet.dir/cell.cpp.i"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\cell.cpp > CMakeFiles\spreadsheet.dir\cell.cpp.i
+
+CMakeFiles/spreadsheet.dir/cell.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/spreadsheet.dir/cell.cpp.s"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\cell.cpp -o CMakeFiles\spreadsheet.dir\cell.cpp.s
+
+CMakeFiles/spreadsheet.dir/formula.cpp.obj: CMakeFiles/spreadsheet.dir/flags.make
+CMakeFiles/spreadsheet.dir/formula.cpp.obj: CMakeFiles/spreadsheet.dir/includes_CXX.rsp
+CMakeFiles/spreadsheet.dir/formula.cpp.obj: C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Spreadsheet/formula.cpp
+CMakeFiles/spreadsheet.dir/formula.cpp.obj: CMakeFiles/spreadsheet.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/spreadsheet.dir/formula.cpp.obj"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/spreadsheet.dir/formula.cpp.obj -MF CMakeFiles\spreadsheet.dir\formula.cpp.obj.d -o CMakeFiles\spreadsheet.dir\formula.cpp.obj -c C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\formula.cpp
+
+CMakeFiles/spreadsheet.dir/formula.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/spreadsheet.dir/formula.cpp.i"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\formula.cpp > CMakeFiles\spreadsheet.dir\formula.cpp.i
+
+CMakeFiles/spreadsheet.dir/formula.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/spreadsheet.dir/formula.cpp.s"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\formula.cpp -o CMakeFiles\spreadsheet.dir\formula.cpp.s
+
 CMakeFiles/spreadsheet.dir/main.cpp.obj: CMakeFiles/spreadsheet.dir/flags.make
 CMakeFiles/spreadsheet.dir/main.cpp.obj: CMakeFiles/spreadsheet.dir/includes_CXX.rsp
 CMakeFiles/spreadsheet.dir/main.cpp.obj: C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Spreadsheet/main.cpp
 CMakeFiles/spreadsheet.dir/main.cpp.obj: CMakeFiles/spreadsheet.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/spreadsheet.dir/main.cpp.obj"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Building CXX object CMakeFiles/spreadsheet.dir/main.cpp.obj"
 	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/spreadsheet.dir/main.cpp.obj -MF CMakeFiles\spreadsheet.dir\main.cpp.obj.d -o CMakeFiles\spreadsheet.dir\main.cpp.obj -c C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\main.cpp
 
 CMakeFiles/spreadsheet.dir/main.cpp.i: cmake_force
@@ -192,6 +222,36 @@ CMakeFiles/spreadsheet.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/spreadsheet.dir/main.cpp.s"
 	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\main.cpp -o CMakeFiles\spreadsheet.dir\main.cpp.s
 
+CMakeFiles/spreadsheet.dir/sheet.cpp.obj: CMakeFiles/spreadsheet.dir/flags.make
+CMakeFiles/spreadsheet.dir/sheet.cpp.obj: CMakeFiles/spreadsheet.dir/includes_CXX.rsp
+CMakeFiles/spreadsheet.dir/sheet.cpp.obj: C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Spreadsheet/sheet.cpp
+CMakeFiles/spreadsheet.dir/sheet.cpp.obj: CMakeFiles/spreadsheet.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_10) "Building CXX object CMakeFiles/spreadsheet.dir/sheet.cpp.obj"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/spreadsheet.dir/sheet.cpp.obj -MF CMakeFiles\spreadsheet.dir\sheet.cpp.obj.d -o CMakeFiles\spreadsheet.dir\sheet.cpp.obj -c C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\sheet.cpp
+
+CMakeFiles/spreadsheet.dir/sheet.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/spreadsheet.dir/sheet.cpp.i"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\sheet.cpp > CMakeFiles\spreadsheet.dir\sheet.cpp.i
+
+CMakeFiles/spreadsheet.dir/sheet.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/spreadsheet.dir/sheet.cpp.s"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\sheet.cpp -o CMakeFiles\spreadsheet.dir\sheet.cpp.s
+
+CMakeFiles/spreadsheet.dir/structures.cpp.obj: CMakeFiles/spreadsheet.dir/flags.make
+CMakeFiles/spreadsheet.dir/structures.cpp.obj: CMakeFiles/spreadsheet.dir/includes_CXX.rsp
+CMakeFiles/spreadsheet.dir/structures.cpp.obj: C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Spreadsheet/structures.cpp
+CMakeFiles/spreadsheet.dir/structures.cpp.obj: CMakeFiles/spreadsheet.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_11) "Building CXX object CMakeFiles/spreadsheet.dir/structures.cpp.obj"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/spreadsheet.dir/structures.cpp.obj -MF CMakeFiles\spreadsheet.dir\structures.cpp.obj.d -o CMakeFiles\spreadsheet.dir\structures.cpp.obj -c C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\structures.cpp
+
+CMakeFiles/spreadsheet.dir/structures.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/spreadsheet.dir/structures.cpp.i"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\structures.cpp > CMakeFiles\spreadsheet.dir\structures.cpp.i
+
+CMakeFiles/spreadsheet.dir/structures.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/spreadsheet.dir/structures.cpp.s"
+	C:\dev\msys64\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\structures.cpp -o CMakeFiles\spreadsheet.dir\structures.cpp.s
+
 # Object files for target spreadsheet
 spreadsheet_OBJECTS = \
 "CMakeFiles/spreadsheet.dir/antlr4cpp_generated_src/Formula/FormulaLexer.cpp.obj" \
@@ -199,7 +259,11 @@ spreadsheet_OBJECTS = \
 "CMakeFiles/spreadsheet.dir/antlr4cpp_generated_src/Formula/FormulaBaseListener.cpp.obj" \
 "CMakeFiles/spreadsheet.dir/antlr4cpp_generated_src/Formula/FormulaListener.cpp.obj" \
 "CMakeFiles/spreadsheet.dir/FormulaAST.cpp.obj" \
-"CMakeFiles/spreadsheet.dir/main.cpp.obj"
+"CMakeFiles/spreadsheet.dir/cell.cpp.obj" \
+"CMakeFiles/spreadsheet.dir/formula.cpp.obj" \
+"CMakeFiles/spreadsheet.dir/main.cpp.obj" \
+"CMakeFiles/spreadsheet.dir/sheet.cpp.obj" \
+"CMakeFiles/spreadsheet.dir/structures.cpp.obj"
 
 # External object files for target spreadsheet
 spreadsheet_EXTERNAL_OBJECTS =
@@ -209,13 +273,17 @@ spreadsheet.exe: CMakeFiles/spreadsheet.dir/antlr4cpp_generated_src/Formula/Form
 spreadsheet.exe: CMakeFiles/spreadsheet.dir/antlr4cpp_generated_src/Formula/FormulaBaseListener.cpp.obj
 spreadsheet.exe: CMakeFiles/spreadsheet.dir/antlr4cpp_generated_src/Formula/FormulaListener.cpp.obj
 spreadsheet.exe: CMakeFiles/spreadsheet.dir/FormulaAST.cpp.obj
+spreadsheet.exe: CMakeFiles/spreadsheet.dir/cell.cpp.obj
+spreadsheet.exe: CMakeFiles/spreadsheet.dir/formula.cpp.obj
 spreadsheet.exe: CMakeFiles/spreadsheet.dir/main.cpp.obj
+spreadsheet.exe: CMakeFiles/spreadsheet.dir/sheet.cpp.obj
+spreadsheet.exe: CMakeFiles/spreadsheet.dir/structures.cpp.obj
 spreadsheet.exe: CMakeFiles/spreadsheet.dir/build.make
 spreadsheet.exe: antlr4_runtime/runtime/libantlr4-runtime-static.a
 spreadsheet.exe: CMakeFiles/spreadsheet.dir/linkLibs.rsp
 spreadsheet.exe: CMakeFiles/spreadsheet.dir/objects1.rsp
 spreadsheet.exe: CMakeFiles/spreadsheet.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable spreadsheet.exe"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Linking CXX executable spreadsheet.exe"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles\spreadsheet.dir\link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

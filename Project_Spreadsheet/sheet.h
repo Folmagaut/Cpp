@@ -5,6 +5,9 @@
 
 #include <functional>
 #include <vector>
+#include <unordered_map>
+#include <unordered_set>
+#include <queue>
 
 class Sheet : public SheetInterface {
 public:
@@ -23,11 +26,16 @@ public:
     void PrintTexts(std::ostream& output) const override;
 
 	// Можете дополнить ваш класс нужными полями и методами
+    void UpdateDependencies(Position pos, const std::vector<Position>& new_dependencies);
+    void InvalidateCache(Position pos);
+    bool HasCircularDependencies(Position pos);
 
 private:
 	// Можете дополнить ваш класс нужными полями и методами
     std::vector<std::vector<std::unique_ptr<Cell>>> cells_;
     Size printable_size_ = {0, 0};
+
+    std::unordered_map<Position, std::unordered_set<Position, PositionHash>, PositionHash> dependencies_;
 
     void ResizeCells(Position pos);
     void UpdatePrintableSize(Position pos);

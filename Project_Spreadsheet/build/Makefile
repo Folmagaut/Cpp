@@ -404,6 +404,54 @@ antlr4cpp_generated_src/Formula/FormulaParser.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/antlr4cpp_generated_src/Formula/FormulaParser.cpp.s
 .PHONY : antlr4cpp_generated_src/Formula/FormulaParser.cpp.s
 
+cell.obj: cell.cpp.obj
+.PHONY : cell.obj
+
+# target to build an object file
+cell.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/cell.cpp.obj
+.PHONY : cell.cpp.obj
+
+cell.i: cell.cpp.i
+.PHONY : cell.i
+
+# target to preprocess a source file
+cell.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/cell.cpp.i
+.PHONY : cell.cpp.i
+
+cell.s: cell.cpp.s
+.PHONY : cell.s
+
+# target to generate assembly for a file
+cell.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/cell.cpp.s
+.PHONY : cell.cpp.s
+
+formula.obj: formula.cpp.obj
+.PHONY : formula.obj
+
+# target to build an object file
+formula.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/formula.cpp.obj
+.PHONY : formula.cpp.obj
+
+formula.i: formula.cpp.i
+.PHONY : formula.i
+
+# target to preprocess a source file
+formula.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/formula.cpp.i
+.PHONY : formula.cpp.i
+
+formula.s: formula.cpp.s
+.PHONY : formula.s
+
+# target to generate assembly for a file
+formula.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/formula.cpp.s
+.PHONY : formula.cpp.s
+
 main.obj: main.cpp.obj
 .PHONY : main.obj
 
@@ -427,6 +475,54 @@ main.s: main.cpp.s
 main.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/main.cpp.s
 .PHONY : main.cpp.s
+
+sheet.obj: sheet.cpp.obj
+.PHONY : sheet.obj
+
+# target to build an object file
+sheet.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/sheet.cpp.obj
+.PHONY : sheet.cpp.obj
+
+sheet.i: sheet.cpp.i
+.PHONY : sheet.i
+
+# target to preprocess a source file
+sheet.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/sheet.cpp.i
+.PHONY : sheet.cpp.i
+
+sheet.s: sheet.cpp.s
+.PHONY : sheet.s
+
+# target to generate assembly for a file
+sheet.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/sheet.cpp.s
+.PHONY : sheet.cpp.s
+
+structures.obj: structures.cpp.obj
+.PHONY : structures.obj
+
+# target to build an object file
+structures.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/structures.cpp.obj
+.PHONY : structures.cpp.obj
+
+structures.i: structures.cpp.i
+.PHONY : structures.i
+
+# target to preprocess a source file
+structures.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/structures.cpp.i
+.PHONY : structures.cpp.i
+
+structures.s: structures.cpp.s
+.PHONY : structures.s
+
+# target to generate assembly for a file
+structures.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\spreadsheet.dir\build.make CMakeFiles/spreadsheet.dir/structures.cpp.s
+.PHONY : structures.cpp.s
 
 # Help Target
 help:
@@ -465,9 +561,21 @@ help:
 	@echo ... antlr4cpp_generated_src/Formula/FormulaParser.obj
 	@echo ... antlr4cpp_generated_src/Formula/FormulaParser.i
 	@echo ... antlr4cpp_generated_src/Formula/FormulaParser.s
+	@echo ... cell.obj
+	@echo ... cell.i
+	@echo ... cell.s
+	@echo ... formula.obj
+	@echo ... formula.i
+	@echo ... formula.s
 	@echo ... main.obj
 	@echo ... main.i
 	@echo ... main.s
+	@echo ... sheet.obj
+	@echo ... sheet.i
+	@echo ... sheet.s
+	@echo ... structures.obj
+	@echo ... structures.i
+	@echo ... structures.s
 .PHONY : help
 
 

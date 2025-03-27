@@ -1,6 +1,7 @@
 #include "formula.h"
-
 #include "FormulaAST.h"
+//#include "sheet.h" // Добавляем включение sheet.h
+#include "common.h"
 
 #include <algorithm>
 #include <cassert>
@@ -10,7 +11,7 @@
 using namespace std::literals;
 
 std::ostream& operator<<(std::ostream& output, FormulaError fe) {
-    return output << "#ARITHM!";
+    return output << fe.ToString();//"#ARITHM!";
 }
 
 namespace {
@@ -22,9 +23,9 @@ public:
         throw;
     }
 
-    Value Evaluate() const override {
+    Value Evaluate(const SheetInterface& sheet) const override {
         try {
-            return ast_.Execute();
+            return ast_.Execute(sheet);
         } catch (const FormulaError& ferr) {
             return ferr;
         }
@@ -36,11 +37,29 @@ public:
         return std::move(out).str();
     }
 
+    std::vector<Position> GetReferencedCells() const override { // Добавляем реализацию
+        /* std::vector<Position> result(ast_.GetCells().begin(), ast_.GetCells().end());
+        std::sort(result.begin(), result.end());
+        result.erase(std::unique(result.begin(), result.end()), result.end());
+        return result; */
+        std::vector<Position> cells;
+        for (auto cell : ast_.GetCells()) {
+            if (cell.IsValid()) cells.push_back(cell);
+        }
+        cells.resize(std::unique(cells.begin(), cells.end()) - cells.begin());
+        return cells;
+    }
+
 private:
     FormulaAST ast_;
 };
 }  // namespace
 
 std::unique_ptr<FormulaInterface> ParseFormula(std::string expression) {
-    return std::make_unique<Formula>(std::move(expression));
+    try {
+        return std::make_unique<Formula>(std::move(expression));
+    }
+    catch (...) {
+        throw FormulaException("");
+    }
 }

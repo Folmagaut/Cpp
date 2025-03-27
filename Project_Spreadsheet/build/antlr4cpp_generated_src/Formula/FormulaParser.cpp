@@ -58,19 +58,19 @@ void formulaParserInitialize() {
       "", "'('", "')'", "", "'+'", "'-'", "'*'", "'/'"
     },
     std::vector<std::string>{
-      "", "", "", "NUMBER", "ADD", "SUB", "MUL", "DIV", "WS"
+      "", "", "", "NUMBER", "ADD", "SUB", "MUL", "DIV", "CELL", "WS"
     }
   );
   static const int32_t serializedATNSegment[] = {
-  	4,1,8,29,2,0,7,0,2,1,7,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-  	3,1,16,8,1,1,1,1,1,1,1,1,1,1,1,1,1,5,1,24,8,1,10,1,12,1,27,9,1,1,1,0,
-  	1,2,2,0,2,0,2,1,0,4,5,1,0,6,7,30,0,4,1,0,0,0,2,15,1,0,0,0,4,5,3,2,1,0,
-  	5,6,5,0,0,1,6,1,1,0,0,0,7,8,6,1,-1,0,8,9,5,1,0,0,9,10,3,2,1,0,10,11,5,
-  	2,0,0,11,16,1,0,0,0,12,13,7,0,0,0,13,16,3,2,1,4,14,16,5,3,0,0,15,7,1,
-  	0,0,0,15,12,1,0,0,0,15,14,1,0,0,0,16,25,1,0,0,0,17,18,10,3,0,0,18,19,
-  	7,1,0,0,19,24,3,2,1,4,20,21,10,2,0,0,21,22,7,0,0,0,22,24,3,2,1,3,23,17,
-  	1,0,0,0,23,20,1,0,0,0,24,27,1,0,0,0,25,23,1,0,0,0,25,26,1,0,0,0,26,3,
-  	1,0,0,0,27,25,1,0,0,0,3,15,23,25
+  	4,1,9,30,2,0,7,0,2,1,7,1,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  	1,1,3,1,17,8,1,1,1,1,1,1,1,1,1,1,1,1,1,5,1,25,8,1,10,1,12,1,28,9,1,1,
+  	1,0,1,2,2,0,2,0,2,1,0,4,5,1,0,6,7,32,0,4,1,0,0,0,2,16,1,0,0,0,4,5,3,2,
+  	1,0,5,6,5,0,0,1,6,1,1,0,0,0,7,8,6,1,-1,0,8,9,5,1,0,0,9,10,3,2,1,0,10,
+  	11,5,2,0,0,11,17,1,0,0,0,12,13,7,0,0,0,13,17,3,2,1,5,14,17,5,8,0,0,15,
+  	17,5,3,0,0,16,7,1,0,0,0,16,12,1,0,0,0,16,14,1,0,0,0,16,15,1,0,0,0,17,
+  	26,1,0,0,0,18,19,10,4,0,0,19,20,7,1,0,0,20,25,3,2,1,5,21,22,10,3,0,0,
+  	22,23,7,0,0,0,23,25,3,2,1,4,24,18,1,0,0,0,24,21,1,0,0,0,25,28,1,0,0,0,
+  	26,24,1,0,0,0,26,27,1,0,0,0,27,3,1,0,0,0,28,26,1,0,0,0,3,16,24,26
   };
   staticData->serializedATN = antlr4::atn::SerializedATNView(serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
 
@@ -255,6 +255,24 @@ void FormulaParser::LiteralContext::exitRule(tree::ParseTreeListener *listener) 
   if (parserListener != nullptr)
     parserListener->exitLiteral(this);
 }
+//----------------- CellContext ------------------------------------------------------------------
+
+tree::TerminalNode* FormulaParser::CellContext::CELL() {
+  return getToken(FormulaParser::CELL, 0);
+}
+
+FormulaParser::CellContext::CellContext(ExprContext *ctx) { copyFrom(ctx); }
+
+void FormulaParser::CellContext::enterRule(tree::ParseTreeListener *listener) {
+  auto parserListener = dynamic_cast<FormulaListener *>(listener);
+  if (parserListener != nullptr)
+    parserListener->enterCell(this);
+}
+void FormulaParser::CellContext::exitRule(tree::ParseTreeListener *listener) {
+  auto parserListener = dynamic_cast<FormulaListener *>(listener);
+  if (parserListener != nullptr)
+    parserListener->exitCell(this);
+}
 //----------------- BinaryOpContext ------------------------------------------------------------------
 
 std::vector<FormulaParser::ExprContext *> FormulaParser::BinaryOpContext::expr() {
@@ -319,7 +337,7 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
   try {
     size_t alt;
     enterOuterAlt(_localctx, 1);
-    setState(15);
+    setState(16);
     _errHandler->sync(this);
     switch (_input->LA(1)) {
       case FormulaParser::T__0: {
@@ -353,7 +371,16 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
           consume();
         }
         setState(13);
-        expr(4);
+        expr(5);
+        break;
+      }
+
+      case FormulaParser::CELL: {
+        _localctx = _tracker.createInstance<CellContext>(_localctx);
+        _ctx = _localctx;
+        previousContext = _localctx;
+        setState(14);
+        match(FormulaParser::CELL);
         break;
       }
 
@@ -361,7 +388,7 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
         _localctx = _tracker.createInstance<LiteralContext>(_localctx);
         _ctx = _localctx;
         previousContext = _localctx;
-        setState(14);
+        setState(15);
         match(FormulaParser::NUMBER);
         break;
       }
@@ -370,7 +397,7 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
       throw NoViableAltException(this);
     }
     _ctx->stop = _input->LT(-1);
-    setState(25);
+    setState(26);
     _errHandler->sync(this);
     alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 2, _ctx);
     while (alt != 2 && alt != atn::ATN::INVALID_ALT_NUMBER) {
@@ -378,17 +405,17 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
         if (!_parseListeners.empty())
           triggerExitRuleEvent();
         previousContext = _localctx;
-        setState(23);
+        setState(24);
         _errHandler->sync(this);
         switch (getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 1, _ctx)) {
         case 1: {
           auto newContext = _tracker.createInstance<BinaryOpContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(17);
-
-          if (!(precpred(_ctx, 3))) throw FailedPredicateException(this, "precpred(_ctx, 3)");
           setState(18);
+
+          if (!(precpred(_ctx, 4))) throw FailedPredicateException(this, "precpred(_ctx, 4)");
+          setState(19);
           _la = _input->LA(1);
           if (!(_la == FormulaParser::MUL
 
@@ -399,8 +426,8 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(19);
-          expr(4);
+          setState(20);
+          expr(5);
           break;
         }
 
@@ -408,10 +435,10 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
           auto newContext = _tracker.createInstance<BinaryOpContext>(_tracker.createInstance<ExprContext>(parentContext, parentState));
           _localctx = newContext;
           pushNewRecursionContext(newContext, startState, RuleExpr);
-          setState(20);
-
-          if (!(precpred(_ctx, 2))) throw FailedPredicateException(this, "precpred(_ctx, 2)");
           setState(21);
+
+          if (!(precpred(_ctx, 3))) throw FailedPredicateException(this, "precpred(_ctx, 3)");
+          setState(22);
           _la = _input->LA(1);
           if (!(_la == FormulaParser::ADD
 
@@ -422,8 +449,8 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
             _errHandler->reportMatch(this);
             consume();
           }
-          setState(22);
-          expr(3);
+          setState(23);
+          expr(4);
           break;
         }
 
@@ -431,7 +458,7 @@ FormulaParser::ExprContext* FormulaParser::expr(int precedence) {
           break;
         } 
       }
-      setState(27);
+      setState(28);
       _errHandler->sync(this);
       alt = getInterpreter<atn::ParserATNSimulator>()->adaptivePredict(_input, 2, _ctx);
     }
@@ -456,8 +483,8 @@ bool FormulaParser::sempred(RuleContext *context, size_t ruleIndex, size_t predi
 
 bool FormulaParser::exprSempred(ExprContext *_localctx, size_t predicateIndex) {
   switch (predicateIndex) {
-    case 0: return precpred(_ctx, 3);
-    case 1: return precpred(_ctx, 2);
+    case 0: return precpred(_ctx, 4);
+    case 1: return precpred(_ctx, 3);
 
   default:
     break;

@@ -393,6 +393,7 @@ CMakeFiles/spreadsheet.dir/FormulaAST.cpp.obj: \
  C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Spreadsheet/antlr4_runtime/runtime/src/tree/xpath/XPathWildcardAnywhereElement.h \
  C:/Users/Folm-M/Desktop/Projects/Cpp/Project_Spreadsheet/antlr4_runtime/runtime/src/tree/xpath/XPathWildcardElement.h \
  C:\Users\Folm-M\Desktop\Projects\Cpp\Project_Spreadsheet\common.h \
+ C:/dev/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/c++/variant \
  C:/dev/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/c++/forward_list \
  C:/dev/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/c++/bits/forward_list.h \
  C:/dev/msys64/mingw64/lib/gcc/x86_64-w64-mingw32/14.2.0/include/c++/bits/forward_list.tcc \
